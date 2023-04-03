@@ -1,24 +1,14 @@
-console.log('Try npm run lint/fix!');
+import {Command} from 'commander';
+import {copy} from './copy';
 
-const longString =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ut aliquet diam.';
+const cli = new Command();
+cli.addCommand(copy);
 
-const trailing = 'Semicolon';
-
-const why = 'am I tabbed?';
-
-export function doSomeStuff(
-  withThis: string,
-  andThat: string,
-  andThose: string[]
-) {
-  //function on one line
-  if (!andThose.length) {
-    return false;
-  }
-  console.log(withThis);
-  console.log(andThat);
-  console.dir(andThose);
-  return;
+async function main() {
+  cli.parse(process.argv);
 }
-// TODO: more examples
+
+main().catch(e => {
+  console.error(e);
+  throw e;
+});

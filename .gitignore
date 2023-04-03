@@ -1,5 +1,7 @@
 # Custom
 build
+credentials.json
+*.code-workspace
 
 # Logs
 logs
