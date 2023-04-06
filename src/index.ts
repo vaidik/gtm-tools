@@ -1,10 +1,10 @@
 import {Command} from 'commander';
-import {copy} from './copy';
-import {list} from './list';
+import {copy_cmd} from './copy';
+import {list_cmd} from './list';
 
 const cli = new Command();
-cli.addCommand(list);
-cli.addCommand(copy);
+cli.addCommand(list_cmd);
+cli.addCommand(copy_cmd);
 
 async function main() {
   cli.parse(process.argv);

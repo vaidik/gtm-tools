@@ -1,6 +1,5 @@
 import {google, tagmanager_v2} from 'googleapis';
-import { GTMEntity, GTMTag } from './types';
-
+import {GTMEntity, GTMTag} from './types';
 
 class TagManagerData {
   accountId: string;

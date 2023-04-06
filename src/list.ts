@@ -5,25 +5,8 @@ import {TagManagerData} from './core';
 
 colors.enable();
 
-const list = new Command('list');
-list
-  .option(
-    '-a, --account <ACCOUNT_ID>',
-    "GTM account's Account ID"
-  )
-  .option(
-    '-c, --container <CONTAINER_ID>',
-    "GTM account's Container ID"
-  );
-
-list.action(async () => {
-  const accountId: string = list.opts().account;
-  const containerId: string = list.opts().container;
-
-  const account: TagManagerData = new TagManagerData(
-    accountId,
-    containerId
-  );
+async function list(accountId: string, containerId: string) {
+  const account: TagManagerData = new TagManagerData(accountId, containerId);
   await account.init();
 
   await account.getData();
@@ -53,6 +36,18 @@ list.action(async () => {
   console.log('==> Tags'.blue, `(${account.tags.size} tags)`);
   console.log(tagsTable.toString());
   console.log('\n');
+}
+
+const list_cmd = new Command('list');
+list_cmd
+  .requiredOption('-a, --account <ACCOUNT_ID>', "GTM account's Account ID")
+  .requiredOption('-c, --container <CONTAINER_ID>', "GTM account's Container ID");
+
+list_cmd.action(async () => {
+  const accountId: string = list_cmd.opts().account;
+  const containerId: string = list_cmd.opts().container;
+
+  await list(accountId, containerId);
 });
 
-export {list};
+export {list_cmd, list};
