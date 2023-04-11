@@ -5,10 +5,7 @@ import {TagManagerData} from './core';
 
 colors.enable();
 
-async function list(accountId: string, containerId: string) {
-  const account: TagManagerData = new TagManagerData(accountId, containerId);
-  await account.init();
-
+async function list(account: TagManagerData) {
   await account.getData();
 
   const variablesTable = new Table({
@@ -46,8 +43,10 @@ list_cmd
 list_cmd.action(async () => {
   const accountId: string = list_cmd.opts().account;
   const containerId: string = list_cmd.opts().container;
+  const account: TagManagerData = new TagManagerData(accountId, containerId);
+  await account.init();
 
-  await list(accountId, containerId);
+  await list(account);
 });
 
 export {list_cmd, list};

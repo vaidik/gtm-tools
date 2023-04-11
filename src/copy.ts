@@ -2,11 +2,14 @@ import {Command} from 'commander';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import {list} from './list';
+import {TagManagerData} from './core';
+import Table from 'cli-table';
 
 colors.enable();
 
-async function copy(sourceAccountId: string, sourceContainerId: string, targetAccountId: string, targetContainerId: string) {
-  console.log('Copied entities succsessfully'.green);
+async function copy(sourceAccount: TagManagerData, targetAccount: TagManagerData) {
+  console.log('Copied entities successfully'.green);
+  return await targetAccount.copyData(sourceAccount.variables);
 }
 
 const copy_cmd = new Command('copy');
@@ -39,8 +42,13 @@ copy_cmd.action(async () => {
   const targetContainerId: string = copy_cmd.opts().targetContainer;
   const isReset: boolean = copy_cmd.opts().reset;
 
+  const sourceAccount: TagManagerData = new TagManagerData(sourceAccountId, sourceContainerId);
+  await sourceAccount.init();
+  const targetAccount: TagManagerData = new TagManagerData(targetAccountId, targetContainerId);
+  await targetAccount.init();
+
   if (isReset) {
-    await list(sourceAccountId, sourceContainerId);
+    await list(sourceAccount);
     inquirer
       .prompt([
         {
@@ -53,7 +61,21 @@ copy_cmd.action(async () => {
       .then(async (answers) => {
         if (answers.continueReset) {
           console.log('Resetting target GTM account and copying entities from source GTM account...'.gray);
-          await copy(sourceAccountId, sourceContainerId, targetAccountId, targetContainerId);
+          const responses = await copy(sourceAccount, targetAccount);
+          const variablesTable = new Table({
+            head: ['Variable ID', 'Name', 'Type', 'Copy Status', 'Reason'],
+          });
+          sourceAccount.variables.forEach((val, variableId) => {
+            variablesTable.push([
+              variableId as string,
+              val.name as string,
+              val.type as string,
+              (responses.get(variableId)?.error === undefined) ? 'Copy Successful' : 'Copy Failed',
+            ]);
+          });
+          console.log('==> Variables'.blue, `(${sourceAccount.variables.size} variables)`);
+          console.log(variablesTable.toString());
+          console.log('\n');
         }
       })
       .catch((error) => {
