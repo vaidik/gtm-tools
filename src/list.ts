@@ -38,12 +38,14 @@ async function list(account: TagManagerData) {
 const list_cmd = new Command('list');
 list_cmd
   .requiredOption('-a, --account <ACCOUNT_ID>', "GTM account's Account ID")
-  .requiredOption('-c, --container <CONTAINER_ID>', "GTM account's Container ID");
+  .requiredOption('-c, --container <CONTAINER_ID>', "GTM account's Container ID")
+  .requiredOption('-w, --workspace <WORKSPACE_ID>', "GTM account's Workspace ID");
 
 list_cmd.action(async () => {
   const accountId: string = list_cmd.opts().account;
   const containerId: string = list_cmd.opts().container;
-  const account: TagManagerData = new TagManagerData(accountId, containerId);
+  const workspaceId: string = list_cmd.opts().workspace;
+  const account: TagManagerData = new TagManagerData(accountId, containerId, workspaceId);
   await account.init();
 
   await list(account);

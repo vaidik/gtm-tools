@@ -23,12 +23,20 @@ copy_cmd
     "Source GTM account's Container ID"
   )
   .requiredOption(
+    '-sw, --source-workspace <SOURCE_WORKSPACE_ID>',
+    "Source GTM account's Workspace ID"
+  )
+  .requiredOption(
     '-ta, --target-account <TARGET_ACCOUNT_ID>',
     "Target GTM account's Account ID"
   )
   .requiredOption(
     '-tc, --target-container <TARGET_CONTAINER_ID>',
     "Target GTM account's Container ID"
+  )
+  .requiredOption(
+    '-tw, --target-workspace <TARGET_WORKSPACE_ID>',
+    "Target GTM account's Workspace ID"
   )
   .option(
     '-r, --reset',
@@ -38,13 +46,15 @@ copy_cmd
 copy_cmd.action(async () => {
   const sourceAccountId: string = copy_cmd.opts().sourceAccount;
   const sourceContainerId: string = copy_cmd.opts().sourceContainer;
+  const sourceWorkspaceId: string = copy_cmd.opts().sourceWorkspace;
   const targetAccountId: string = copy_cmd.opts().targetAccount;
   const targetContainerId: string = copy_cmd.opts().targetContainer;
+  const targetWorkspaceId: string = copy_cmd.opts().targetWorkspace;
   const isReset: boolean = copy_cmd.opts().reset;
 
-  const sourceAccount: TagManagerData = new TagManagerData(sourceAccountId, sourceContainerId);
+  const sourceAccount: TagManagerData = new TagManagerData(sourceAccountId, sourceContainerId, sourceWorkspaceId);
   await sourceAccount.init();
-  const targetAccount: TagManagerData = new TagManagerData(targetAccountId, targetContainerId, '3', true);
+  const targetAccount: TagManagerData = new TagManagerData(targetAccountId, targetContainerId, targetWorkspaceId, true);
   await targetAccount.init();
 
   if (isReset) {

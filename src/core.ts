@@ -22,23 +22,18 @@ class TagManagerData {
   triggers: Map<string, tagmanager_v2.Schema$Trigger>;
   tags: Map<string, tagmanager_v2.Schema$Tag>;
   isResettable: boolean;
-  private gtm_client: tagmanager_v2.Tagmanager;
+  private gtmClient: tagmanager_v2.Tagmanager;
   private parent: string;
 
-  constructor(accountId: string, containerId: string, workspaceId: string | undefined = undefined, isResettable: boolean = false) {
+  constructor(accountId: string, containerId: string, workspaceId: string, isResettable: boolean = false) {
     this.accountId = accountId;
     this.containerId = containerId;
-    if (workspaceId === undefined) {
-      console.log('[WARN] Using default Workspace ID 3'.yellow);
-      this.workspaceId = DEFAULT_WORKSPACE_ID;
-    } else {
-      this.workspaceId = workspaceId;
-    }
+    this.workspaceId = workspaceId;
     this.isResettable = isResettable;
     this.variables = new Map<string, tagmanager_v2.Schema$Variable>();
     this.triggers = new Map<string, tagmanager_v2.Schema$Trigger>();
     this.tags = new Map<string, tagmanager_v2.Schema$Tag>();
-    this.gtm_client = google.tagmanager('v2');
+    this.gtmClient = google.tagmanager('v2');
     this.parent = `accounts/${this.accountId}/containers/${this.containerId}/workspaces/${this.workspaceId}`;
   }
 
@@ -63,7 +58,7 @@ class TagManagerData {
 
   async getData() {
     const triggers = (
-      await this.gtm_client.accounts.containers.workspaces.triggers.list({
+      await this.gtmClient.accounts.containers.workspaces.triggers.list({
         parent: this.parent,
       })
     ).data.trigger;
@@ -73,7 +68,7 @@ class TagManagerData {
     });
 
     const variables = (
-      await this.gtm_client.accounts.containers.workspaces.variables.list({
+      await this.gtmClient.accounts.containers.workspaces.variables.list({
         parent: this.parent,
       })
     ).data.variable;
@@ -86,7 +81,7 @@ class TagManagerData {
     });
 
     const tags = (
-      await this.gtm_client.accounts.containers.workspaces.tags.list({
+      await this.gtmClient.accounts.containers.workspaces.tags.list({
         parent: this.parent,
       })
     ).data.tag;
@@ -110,7 +105,7 @@ class TagManagerData {
     requestBody.formatValue;
 
     try {
-      const res = this.gtm_client.accounts.containers.workspaces.variables.create({
+      const res = this.gtmClient.accounts.containers.workspaces.variables.create({
         parent: this.parent,
         requestBody: requestBody,
       });
@@ -143,7 +138,7 @@ class TagManagerData {
     console.log('resetting', this.variables.size);
     await Promise.all(Array.from(this.variables.values()).map(async (val) => {
       console.log(`====> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`.grey)
-      const response = await this.gtm_client.accounts.containers.workspaces.variables.delete({
+      const response = await this.gtmClient.accounts.containers.workspaces.variables.delete({
         path: `${this.parent}/variables/${val.variableId}`
       });
       console.log(response);

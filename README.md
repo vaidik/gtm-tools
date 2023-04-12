@@ -13,7 +13,7 @@ Tools to simplify working with Google Tag Manager.
 The `list` command lists entities in a Google Tag Manager account.
 
 ```
-gtm-tools list -a <ACCOUNT_ID> -c <CONTAINER_ID>
+gtm-tools list -a <ACCOUNT_ID> -c <CONTAINER_ID> -w <WORKSPACE_ID>
 ```
 
 The `list` command comes with options:
@@ -33,7 +33,7 @@ entities of both the accounts and copy only the changes from the source account
 to the target account.
 
 ```
-gtm-tools copy -sa <SOURCE_ACCOUNT_ID> -sc <SOURCE_CONTAINER_ID> -ta <TARGET_ACCOUNT_ID> -tc <TARGET_CONTAINER_ID>
+gtm-tools copy -sa <SOURCE_ACCOUNT_ID> -sc <SOURCE_CONTAINER_ID> -sw <SOURCE_WORKSPACE_ID> -ta <TARGET_ACCOUNT_ID> -tc <TARGET_CONTAINER_ID> -tw <TARGET_WORKSPACE_ID>
 ```
 
 The `copy` command comes with options:
@@ -60,5 +60,5 @@ The `reset` command resets a Google Tag Manager account i.e. it
 <span style="color:red">deletes all entities</span> in an account.
 
 ```
-gtm-tools reset -sa <SOURCE_ACCOUNT_ID> -sc <SOURCE_CONTAINER_ID> -ta <TARGET_ACCOUNT_ID> -tc <TARGET_CONTAINER_ID>
+gtm-tools reset -a <ACCOUNT_ID> -c <CONTAINER_ID> -w <WORKSPACE_ID>
 ```
