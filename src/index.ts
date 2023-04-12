@@ -1,24 +1,20 @@
-console.log('Try npm run lint/fix!');
+import {Command} from 'commander';
+import {copy_cmd} from './copy';
+import {list_cmd} from './list';
 
-const longString =
-  'Lorem ipsum dolor sit amet, consectetur adipiscing elit. Integer ut aliquet diam.';
+const cli = new Command();
+cli.addCommand(list_cmd);
+cli.addCommand(copy_cmd);
 
-const trailing = 'Semicolon';
-
-const why = 'am I tabbed?';
-
-export function doSomeStuff(
-  withThis: string,
-  andThat: string,
-  andThose: string[]
-) {
-  //function on one line
-  if (!andThose.length) {
-    return false;
+async function main() {
+  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
+    console.log('GOOGLE_APPLICATION_CREDENTIALS environment variable must be set and pointing to a valid Google API credentials.json file.'.red)
+    process.exit(1);
   }
-  console.log(withThis);
-  console.log(andThat);
-  console.dir(andThose);
-  return;
+  cli.parse(process.argv);
 }
-// TODO: more examples
+
+main().catch(e => {
+  console.error(e);
+  throw e;
+});

@@ -1,5 +1,8 @@
 # Custom
 build
+credentials.json
+*.code-workspace
+*.vscode
 
 # Logs
 logs
