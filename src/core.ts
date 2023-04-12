@@ -21,10 +21,11 @@ class TagManagerData {
   variables: Map<string, tagmanager_v2.Schema$Variable>;
   triggers: Map<string, tagmanager_v2.Schema$Trigger>;
   tags: Map<string, tagmanager_v2.Schema$Tag>;
+  isResettable: boolean;
   private gtm_client: tagmanager_v2.Tagmanager;
   private parent: string;
 
-  constructor(accountId: string, containerId: string, workspaceId: string | undefined = undefined) {
+  constructor(accountId: string, containerId: string, workspaceId: string | undefined = undefined, isResettable: boolean = false) {
     this.accountId = accountId;
     this.containerId = containerId;
     if (workspaceId === undefined) {
@@ -33,6 +34,7 @@ class TagManagerData {
     } else {
       this.workspaceId = workspaceId;
     }
+    this.isResettable = isResettable;
     this.variables = new Map<string, tagmanager_v2.Schema$Variable>();
     this.triggers = new Map<string, tagmanager_v2.Schema$Trigger>();
     this.tags = new Map<string, tagmanager_v2.Schema$Tag>();
@@ -131,6 +133,22 @@ class TagManagerData {
         responses.set(val.variableId as string, response);
       }));
     }
+
+    return Promise.resolve(responses);
+  }
+
+  async reset() {
+    if (!this.isResettable) throw Error(`This GTM account (Account ID: ${this.accountId}) is not resettable.`);
+    const responses: GaxiosResponse[] = [];
+    console.log('resetting', this.variables.size);
+    await Promise.all(Array.from(this.variables.values()).map(async (val) => {
+      console.log(`====> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`.grey)
+      const response = await this.gtm_client.accounts.containers.workspaces.variables.delete({
+        path: `${this.parent}/variables/${val.variableId}`
+      });
+      console.log(response);
+      responses.push(response);
+    }));
 
     return Promise.resolve(responses);
   }

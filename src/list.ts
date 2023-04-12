@@ -9,10 +9,10 @@ async function list(account: TagManagerData) {
   await account.getData();
 
   const variablesTable = new Table({
-    head: ['Name', 'Type', 'Last Edited'],
+    head: ['Variable ID', 'Name', 'Type', 'Last Edited'],
   });
   account.variables.forEach(val => {
-    variablesTable.push([val.name as string, val.type as string]);
+    variablesTable.push([val.variableId as string, val.name as string, val.type as string]);
   });
   console.log('==> Variables'.blue, `(${account.variables.size} variables)`);
   console.log(variablesTable.toString());

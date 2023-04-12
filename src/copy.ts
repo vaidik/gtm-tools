@@ -44,7 +44,7 @@ copy_cmd.action(async () => {
 
   const sourceAccount: TagManagerData = new TagManagerData(sourceAccountId, sourceContainerId);
   await sourceAccount.init();
-  const targetAccount: TagManagerData = new TagManagerData(targetAccountId, targetContainerId);
+  const targetAccount: TagManagerData = new TagManagerData(targetAccountId, targetContainerId, '3', true);
   await targetAccount.init();
 
   if (isReset) {
@@ -61,6 +61,8 @@ copy_cmd.action(async () => {
       .then(async (answers) => {
         if (answers.continueReset) {
           console.log('Resetting target GTM account and copying entities from source GTM account...'.gray);
+          await targetAccount.getData();
+          await targetAccount.reset();
           const responses = await copy(sourceAccount, targetAccount);
           const variablesTable = new Table({
             head: ['Variable ID', 'Name', 'Type', 'Copy Status', 'Reason'],
@@ -80,11 +82,6 @@ copy_cmd.action(async () => {
       })
       .catch((error) => {
         console.log(error);
-        // if (error.isTtyError) {
-        //   // Prompt couldn't be rendered in the current environment
-        // } else {
-        //   // Something else went wrong
-        // }
       });
   }
 });
