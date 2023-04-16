@@ -1,8 +1,8 @@
 import {Command} from 'commander';
 import colors from 'colors';
 import inquirer from 'inquirer';
-import {list} from './list';
-import {TagManagerData} from './core';
+import {list} from './list.js';
+import {TagManagerData} from './core.js';
 import Table from 'cli-table';
 
 colors.enable();

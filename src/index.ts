@@ -1,6 +1,6 @@
 import {Command} from 'commander';
-import {copy_cmd} from './copy';
-import {list_cmd} from './list';
+import {copy_cmd} from './copy.js';
+import {list_cmd} from './list.js';
 
 const cli = new Command();
 cli.addCommand(list_cmd);

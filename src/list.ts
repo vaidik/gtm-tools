@@ -1,7 +1,7 @@
 import {Command} from 'commander';
 import Table from 'cli-table';
 import colors from 'colors';
-import {TagManagerData} from './core';
+import {TagManagerData} from './core.js';
 
 colors.enable();
 
