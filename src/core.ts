@@ -115,7 +115,7 @@ class TagManagerData {
       response.response = res;
       await res;
     } catch (e) {
-      response.error = e;
+      response.error = e as Error;
     }
 
     return response;
