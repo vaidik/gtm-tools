@@ -13,7 +13,11 @@ async function list(account: TagManagerData) {
     head: ['Variable ID', 'Name', 'Type', 'Last Edited'],
   });
   account.variables.forEach(val => {
-    variablesTable.push([val.variableId as string, val.name as string, val.type as string]);
+    variablesTable.push([
+      val.variableId as string,
+      val.name as string,
+      val.type as string,
+    ]);
   });
   console.log('==> Variables'.blue, `(${account.variables.size} variables)`);
   console.log(variablesTable.toString());
@@ -38,10 +42,28 @@ async function list(account: TagManagerData) {
 
 const list_cmd = new Command('list');
 list_cmd
-  .option('-aa, --account-alias <ACCOUNT_ALIAS>', "GTM account's alias as specified in the config")
-  .addOption(new Option('-a, --account <ACCOUNT_ID>', "GTM account's Account ID").conflicts('accountAlias'))
-  .addOption(new Option('-c, --container <CONTAINER_ID>', "GTM account's Container ID").conflicts('accountAlias'))
-  .addOption(new Option('-w, --workspace <WORKSPACE_ID>', "GTM account's Workspace ID").conflicts('accountAlias'));
+  .option(
+    '-aa, --account-alias <ACCOUNT_ALIAS>',
+    "GTM account's alias as specified in the config"
+  )
+  .addOption(
+    new Option(
+      '-a, --account <ACCOUNT_ID>',
+      "GTM account's Account ID"
+    ).conflicts('accountAlias')
+  )
+  .addOption(
+    new Option(
+      '-c, --container <CONTAINER_ID>',
+      "GTM account's Container ID"
+    ).conflicts('accountAlias')
+  )
+  .addOption(
+    new Option(
+      '-w, --workspace <WORKSPACE_ID>',
+      "GTM account's Workspace ID"
+    ).conflicts('accountAlias')
+  );
 
 list_cmd.action(async () => {
   const accountAlias: string = list_cmd.opts().accountAlias;
@@ -56,7 +78,11 @@ list_cmd.action(async () => {
     workspaceId = accountConfig?.workspaceId as string;
   }
 
-  const account: TagManagerData = new TagManagerData(accountId, containerId, workspaceId);
+  const account: TagManagerData = new TagManagerData(
+    accountId,
+    containerId,
+    workspaceId
+  );
   await account.init();
 
   await list(account);

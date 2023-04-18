@@ -1,44 +1,31 @@
 import 'reflect-metadata';
-import { plainToClass, Type } from 'class-transformer';
+import {Type} from 'class-transformer';
 
-
-import {
-  validate,
-  validateOrReject,
-  ValidateNested,
-  Contains,
-  IsInt,
-  Length,
-  IsEmail,
-  IsBoolean,
-  IsString,
-  IsOptional,
-  IsFQDN,
-  IsDate,
-  Min,
-  Max,
-} from 'class-validator';
-
-import util from 'util';
+import {ValidateNested, IsBoolean, IsString, IsOptional} from 'class-validator';
 
 class AccountConfig {
   @IsString()
-  alias: string
+  alias: string;
 
   @IsString()
-  accountId: string
+  accountId: string;
 
   @IsString()
-  containerId: string
+  containerId: string;
 
   @IsString()
-  workspaceId: string
+  workspaceId: string;
 
   @IsBoolean()
   @IsOptional()
-  isResettable?: boolean
+  isResettable?: boolean;
 
-  constructor(alias: string, accountId: string, containerId: string, workspaceId: string) {
+  constructor(
+    alias: string,
+    accountId: string,
+    containerId: string,
+    workspaceId: string
+  ) {
     this.alias = alias;
     this.accountId = accountId;
     this.containerId = containerId;
@@ -51,7 +38,7 @@ export class Config {
 
   @ValidateNested()
   @Type(() => AccountConfig)
-  accounts?: AccountConfig[]
+  accounts?: AccountConfig[];
 
   constructor(accounts?: AccountConfig[]) {
     if (Config.instance) {
@@ -63,9 +50,13 @@ export class Config {
   }
 
   getAccount(alias: string): AccountConfig | undefined {
-    const matchedAccounts = this.accounts?.filter(account => account.alias === alias);
-    if (matchedAccounts?.length == 0) {
-      throw new Error(`Could not find an account by the alias ${alias} in the config.`)
+    const matchedAccounts = this.accounts?.filter(
+      account => account.alias === alias
+    );
+    if (matchedAccounts?.length === 0) {
+      throw new Error(
+        `Could not find an account by the alias ${alias} in the config.`
+      );
     }
     return matchedAccounts ? matchedAccounts[0] : undefined;
   }

@@ -1,15 +1,12 @@
-import { Gaxios, GaxiosResponse, GaxiosPromise } from 'gaxios';
-import { google, tagmanager_v2 } from 'googleapis';
-import { resourceLimits } from 'worker_threads';
-
-const DEFAULT_WORKSPACE_ID = '3';
+import {GaxiosResponse, GaxiosPromise} from 'gaxios';
+import {google, tagmanager_v2} from 'googleapis';
 
 class CopyResponse<T> {
   public requestBody: T;
   public response: GaxiosPromise<T> | undefined;
-  public error: any;
+  public error: Error | undefined;
 
-  constructor(requestBody: T, response: GaxiosPromise<T> | undefined = undefined) {
+  constructor(requestBody: T) {
     this.requestBody = requestBody;
   }
 }
@@ -25,7 +22,12 @@ class TagManagerData {
   private gtmClient: tagmanager_v2.Tagmanager;
   private parent: string;
 
-  constructor(accountId: string, containerId: string, workspaceId: string, isResettable: boolean = false) {
+  constructor(
+    accountId: string,
+    containerId: string,
+    workspaceId: string,
+    isResettable = false
+  ) {
     this.accountId = accountId;
     this.containerId = containerId;
     this.workspaceId = workspaceId;
@@ -53,7 +55,7 @@ class TagManagerData {
     } catch (e) {
       console.log(e);
     }
-    google.options({ auth: authClient });
+    google.options({auth: authClient});
   }
 
   async getData() {
@@ -64,7 +66,7 @@ class TagManagerData {
     ).data.trigger;
 
     triggers?.forEach(trigger => {
-      this.triggers.set(trigger.triggerId as string, { ...trigger });
+      this.triggers.set(trigger.triggerId as string, {...trigger});
     });
 
     const variables = (
@@ -74,10 +76,7 @@ class TagManagerData {
     ).data.variable;
 
     variables?.forEach(variable => {
-      this.variables.set(
-        variable.variableId as string,
-        { ...variable }
-      );
+      this.variables.set(variable.variableId as string, {...variable});
     });
 
     const tags = (
@@ -87,15 +86,18 @@ class TagManagerData {
     ).data.tag;
 
     tags?.forEach(tag => {
-      this.tags.set(tag.tagId as string, { ...tag });
+      this.tags.set(tag.tagId as string, {...tag});
     });
   }
 
-  async copyVariable(val: tagmanager_v2.Schema$Variable): Promise<CopyResponse<tagmanager_v2.Schema$Variable>> {
+  async copyVariable(
+    val: tagmanager_v2.Schema$Variable
+  ): Promise<CopyResponse<tagmanager_v2.Schema$Variable>> {
     const requestBody: tagmanager_v2.Schema$Variable = {
-      ...val
+      ...val,
     };
-    const response: CopyResponse<tagmanager_v2.Schema$Variable> = new CopyResponse<tagmanager_v2.Schema$Variable>(requestBody);
+    const response: CopyResponse<tagmanager_v2.Schema$Variable> =
+      new CopyResponse<tagmanager_v2.Schema$Variable>(requestBody);
     requestBody.workspaceId = this.workspaceId;
     requestBody.accountId = this.accountId;
     requestBody.containerId = this.containerId;
@@ -105,10 +107,11 @@ class TagManagerData {
     requestBody.formatValue;
 
     try {
-      const res = this.gtmClient.accounts.containers.workspaces.variables.create({
-        parent: this.parent,
-        requestBody: requestBody,
-      });
+      const res =
+        this.gtmClient.accounts.containers.workspaces.variables.create({
+          parent: this.parent,
+          requestBody: requestBody,
+        });
       response.response = res;
       await res;
     } catch (e) {
@@ -118,35 +121,54 @@ class TagManagerData {
     return response;
   }
 
-  async copyData(sourceVariables: Map<string, tagmanager_v2.Schema$Variable> | undefined): Promise<Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>> {
-    const responses: Map<string, CopyResponse<tagmanager_v2.Schema$Variable>> = new Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>();
+  async copyData(
+    sourceVariables: Map<string, tagmanager_v2.Schema$Variable> | undefined
+  ): Promise<Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>> {
+    const responses: Map<
+      string,
+      CopyResponse<tagmanager_v2.Schema$Variable>
+    > = new Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>();
 
     if (sourceVariables !== undefined) {
-      await Promise.all(Array.from(sourceVariables.values()).map(async (val) => {
-        console.log(`====> Coping variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`.grey)
-        const response = await this.copyVariable(val);
-        responses.set(val.variableId as string, response);
-      }));
+      await Promise.all(
+        Array.from(sourceVariables.values()).map(async val => {
+          console.log(
+            `====> Coping variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+              .grey
+          );
+          const response = await this.copyVariable(val);
+          responses.set(val.variableId as string, response);
+        })
+      );
     }
 
     return Promise.resolve(responses);
   }
 
   async reset() {
-    if (!this.isResettable) throw Error(`This GTM account (Account ID: ${this.accountId}) is not resettable.`);
+    if (!this.isResettable)
+      throw Error(
+        `This GTM account (Account ID: ${this.accountId}) is not resettable.`
+      );
     const responses: GaxiosResponse[] = [];
     console.log('resetting', this.variables.size);
-    await Promise.all(Array.from(this.variables.values()).map(async (val) => {
-      console.log(`====> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`.grey)
-      const response = await this.gtmClient.accounts.containers.workspaces.variables.delete({
-        path: `${this.parent}/variables/${val.variableId}`
-      });
-      console.log(response);
-      responses.push(response);
-    }));
+    await Promise.all(
+      Array.from(this.variables.values()).map(async val => {
+        console.log(
+          `====> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+            .grey
+        );
+        const response =
+          await this.gtmClient.accounts.containers.workspaces.variables.delete({
+            path: `${this.parent}/variables/${val.variableId}`,
+          });
+        console.log(response);
+        responses.push(response);
+      })
+    );
 
     return Promise.resolve(responses);
   }
 }
 
-export { TagManagerData };
+export {TagManagerData};
