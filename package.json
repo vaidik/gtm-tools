@@ -1,4 +1,8 @@
 {
+  "engines" : { 
+    "npm" : ">=9.5.0",
+    "node" : ">=18.0.0"
+  },
   "type": "module",
   "devDependencies": {
     "@types/cli-table": "^0.3.1",
