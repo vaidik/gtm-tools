@@ -1,7 +1,8 @@
-import {Command} from 'commander';
+import {Command, Option} from 'commander';
 import Table from 'cli-table';
 import colors from 'colors';
-import {TagManagerData} from './core';
+import {TagManagerData} from './core.js';
+import {Config} from './config.js';
 
 colors.enable();
 
@@ -12,7 +13,11 @@ async function list(account: TagManagerData) {
     head: ['Variable ID', 'Name', 'Type', 'Last Edited'],
   });
   account.variables.forEach(val => {
-    variablesTable.push([val.variableId as string, val.name as string, val.type as string]);
+    variablesTable.push([
+      val.variableId as string,
+      val.name as string,
+      val.type as string,
+    ]);
   });
   console.log('==> Variables'.blue, `(${account.variables.size} variables)`);
   console.log(variablesTable.toString());
@@ -37,15 +42,47 @@ async function list(account: TagManagerData) {
 
 const list_cmd = new Command('list');
 list_cmd
-  .requiredOption('-a, --account <ACCOUNT_ID>', "GTM account's Account ID")
-  .requiredOption('-c, --container <CONTAINER_ID>', "GTM account's Container ID")
-  .requiredOption('-w, --workspace <WORKSPACE_ID>', "GTM account's Workspace ID");
+  .option(
+    '-aa, --account-alias <ACCOUNT_ALIAS>',
+    "GTM account's alias as specified in the config"
+  )
+  .addOption(
+    new Option(
+      '-a, --account <ACCOUNT_ID>',
+      "GTM account's Account ID"
+    ).conflicts('accountAlias')
+  )
+  .addOption(
+    new Option(
+      '-c, --container <CONTAINER_ID>',
+      "GTM account's Container ID"
+    ).conflicts('accountAlias')
+  )
+  .addOption(
+    new Option(
+      '-w, --workspace <WORKSPACE_ID>',
+      "GTM account's Workspace ID"
+    ).conflicts('accountAlias')
+  );
 
 list_cmd.action(async () => {
-  const accountId: string = list_cmd.opts().account;
-  const containerId: string = list_cmd.opts().container;
-  const workspaceId: string = list_cmd.opts().workspace;
-  const account: TagManagerData = new TagManagerData(accountId, containerId, workspaceId);
+  const accountAlias: string = list_cmd.opts().accountAlias;
+  let accountId: string = list_cmd.opts().account;
+  let containerId: string = list_cmd.opts().container;
+  let workspaceId: string = list_cmd.opts().workspace;
+  if (accountAlias !== undefined) {
+    const config = new Config();
+    const accountConfig = config.getAccount(accountAlias);
+    accountId = accountConfig?.accountId as string;
+    containerId = accountConfig?.containerId as string;
+    workspaceId = accountConfig?.workspaceId as string;
+  }
+
+  const account: TagManagerData = new TagManagerData(
+    accountId,
+    containerId,
+    workspaceId
+  );
   await account.init();
 
   await list(account);

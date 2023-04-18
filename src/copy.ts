@@ -1,13 +1,16 @@
 import {Command} from 'commander';
 import colors from 'colors';
 import inquirer from 'inquirer';
-import {list} from './list';
-import {TagManagerData} from './core';
+import {list} from './list.js';
+import {TagManagerData} from './core.js';
 import Table from 'cli-table';
 
 colors.enable();
 
-async function copy(sourceAccount: TagManagerData, targetAccount: TagManagerData) {
+async function copy(
+  sourceAccount: TagManagerData,
+  targetAccount: TagManagerData
+) {
   console.log('Copied entities successfully'.green);
   return await targetAccount.copyData(sourceAccount.variables);
 }
@@ -52,9 +55,18 @@ copy_cmd.action(async () => {
   const targetWorkspaceId: string = copy_cmd.opts().targetWorkspace;
   const isReset: boolean = copy_cmd.opts().reset;
 
-  const sourceAccount: TagManagerData = new TagManagerData(sourceAccountId, sourceContainerId, sourceWorkspaceId);
+  const sourceAccount: TagManagerData = new TagManagerData(
+    sourceAccountId,
+    sourceContainerId,
+    sourceWorkspaceId
+  );
   await sourceAccount.init();
-  const targetAccount: TagManagerData = new TagManagerData(targetAccountId, targetContainerId, targetWorkspaceId, true);
+  const targetAccount: TagManagerData = new TagManagerData(
+    targetAccountId,
+    targetContainerId,
+    targetWorkspaceId,
+    true
+  );
   await targetAccount.init();
 
   if (isReset) {
@@ -64,13 +76,17 @@ copy_cmd.action(async () => {
         {
           type: 'confirm',
           name: 'continueReset',
-          message: 'Do you want to continue to reset the target GTM account and copy all entities from the source GTM account?',
+          message:
+            'Do you want to continue to reset the target GTM account and copy all entities from the source GTM account?',
           default: false,
-        }
+        },
       ])
-      .then(async (answers) => {
+      .then(async answers => {
         if (answers.continueReset) {
-          console.log('Resetting target GTM account and copying entities from source GTM account...'.gray);
+          console.log(
+            'Resetting target GTM account and copying entities from source GTM account...'
+              .gray
+          );
           await targetAccount.getData();
           await targetAccount.reset();
           const responses = await copy(sourceAccount, targetAccount);
@@ -82,15 +98,20 @@ copy_cmd.action(async () => {
               variableId as string,
               val.name as string,
               val.type as string,
-              (responses.get(variableId)?.error === undefined) ? 'Copy Successful' : 'Copy Failed',
+              responses.get(variableId)?.error === undefined
+                ? 'Copy Successful'
+                : 'Copy Failed',
             ]);
           });
-          console.log('==> Variables'.blue, `(${sourceAccount.variables.size} variables)`);
+          console.log(
+            '==> Variables'.blue,
+            `(${sourceAccount.variables.size} variables)`
+          );
           console.log(variablesTable.toString());
           console.log('\n');
         }
       })
-      .catch((error) => {
+      .catch(error => {
         console.log(error);
       });
   }
