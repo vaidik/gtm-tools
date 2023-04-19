@@ -9,8 +9,9 @@ colors.enable();
 async function list(account: TagManagerData) {
   await account.getData();
 
+  // Variables
   const variablesTable = new Table({
-    head: ['Variable ID', 'Name', 'Type', 'Last Edited'],
+    head: ['Variable ID', 'Name', 'Type'],
   });
   account.variables.forEach(val => {
     variablesTable.push([
@@ -23,20 +24,42 @@ async function list(account: TagManagerData) {
   console.log(variablesTable.toString());
   console.log('\n');
 
+  // Tags
   const tagsTable = new Table({
-    head: ['Name', 'Type', 'Firing Triggers', 'Last Edited'],
+    head: ['Tag ID', 'Name', 'Type', 'Firing Triggers (Trigger ID)'],
   });
   account.tags?.forEach(tag => {
     tagsTable.push([
+      tag.tagId as string,
       tag.name as string,
       tag.type as string,
       tag.firingTriggerId
-        ?.map(x => account.triggers?.get(x)?.name)
+        ?.map(
+          x =>
+            `${account.triggers?.get(x)?.name} (${
+              account.triggers?.get(x)?.triggerId
+            })`
+        )
         .join(', ') as string,
     ]);
   });
   console.log('==> Tags'.blue, `(${account.tags.size} tags)`);
   console.log(tagsTable.toString());
+  console.log('\n');
+
+  // Triggers
+  const triggersTable = new Table({
+    head: ['Trigger ID', 'Name', 'Type'],
+  });
+  account.triggers?.forEach(trigger => {
+    triggersTable.push([
+      trigger.triggerId as string,
+      trigger.name as string,
+      trigger.type as string,
+    ]);
+  });
+  console.log('==> Triggers'.blue, `(${account.triggers.size} triggers)`);
+  console.log(triggersTable.toString());
   console.log('\n');
 }
 
