@@ -1,0 +1,11 @@
+{
+  "accounts": [
+    {
+      "alias": "account-1",
+      "accountId": "123456789",
+      "containerId": "123456789",
+      "workspaceId": "2",
+      "isResettable": false
+    }
+  ]
+}
