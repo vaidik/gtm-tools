@@ -3,6 +3,7 @@ build
 credentials.json
 *.code-workspace
 *.vscode
+config.json
 
 # Logs
 logs
