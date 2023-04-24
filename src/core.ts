@@ -1,5 +1,6 @@
 import {GaxiosResponse, GaxiosPromise} from 'gaxios';
 import {google, tagmanager_v2} from 'googleapis';
+import {Option} from 'commander';
 
 class CopyResponse<T> {
   public requestBody: T;
@@ -11,7 +12,7 @@ class CopyResponse<T> {
   }
 }
 
-class TagManagerData {
+export class TagManagerData {
   accountId: string;
   containerId: string;
   workspaceId: string;
@@ -171,4 +172,23 @@ class TagManagerData {
   }
 }
 
-export {TagManagerData};
+export function validateSingleAccountOpts(
+  options: {primaryOption: Option; conflictingOptions: Option[]},
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  opts: Record<string, any>
+) {
+  const accountAlias: string = opts.accountAlias;
+  const accountId: string = opts.account;
+  const containerId: string = opts.container;
+  const workspaceId: string = opts.workspace;
+
+  if (!(!!accountAlias || (!!accountId && !!containerId && !!workspaceId))) {
+    let errorMsg =
+      'one of the following options or group of options must be set:\n';
+    errorMsg += `- ${options.primaryOption.flags}\n`;
+    errorMsg += `- ${options.conflictingOptions
+      .map(op => `'${op.flags}'`)
+      .join(', ')}\n`;
+    throw new Error(errorMsg);
+  }
+}
