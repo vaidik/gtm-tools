@@ -4,6 +4,7 @@ import {plainToClass} from 'class-transformer';
 import {Command} from 'commander';
 import {copy_cmd} from './copy.js';
 import {list_cmd} from './list.js';
+import {reset_cmd} from './reset.js';
 import {Config} from './config.js';
 import fs from 'fs';
 
@@ -15,6 +16,7 @@ cli.option('--config <CONFIG_FILE>', 'Path to the config file');
 // Register sub-commands
 cli.addCommand(list_cmd);
 cli.addCommand(copy_cmd);
+cli.addCommand(reset_cmd);
 
 // Main command
 cli.hook('preAction', async () => {

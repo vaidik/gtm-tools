@@ -152,7 +152,6 @@ export class TagManagerData {
         `This GTM account (Account ID: ${this.accountId}) is not resettable.`
       );
     const responses: GaxiosResponse[] = [];
-    console.log('resetting', this.variables.size);
     await Promise.all(
       Array.from(this.variables.values()).map(async val => {
         console.log(
@@ -163,7 +162,6 @@ export class TagManagerData {
           await this.gtmClient.accounts.containers.workspaces.variables.delete({
             path: `${this.parent}/variables/${val.variableId}`,
           });
-        console.log(response);
         responses.push(response);
       })
     );
