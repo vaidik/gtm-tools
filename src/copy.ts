@@ -1,8 +1,10 @@
-import {Command} from 'commander';
+import {Command, Option} from 'commander';
 import colors from 'colors';
 import inquirer from 'inquirer';
 import {list} from './list.js';
+import {validateSingleAccountOpts} from './core.js';
 import {TagManagerData} from './core.js';
+import {Config} from './config.js';
 import Table from 'cli-table';
 
 colors.enable();
@@ -16,44 +18,108 @@ async function copy(
 }
 
 const copy_cmd = new Command('copy');
-copy_cmd
-  .requiredOption(
-    '-sa, --source-account <SOURCE_ACCOUNT_ID>',
-    "Source GTM account's Account ID"
-  )
-  .requiredOption(
-    '-sc, --source-container <SOURCE_CONTAINER_ID>',
-    "Source GTM account's Container ID"
-  )
-  .requiredOption(
-    '-sw, --source-workspace <SOURCE_WORKSPACE_ID>',
-    "Source GTM account's Workspace ID"
-  )
-  .requiredOption(
-    '-ta, --target-account <TARGET_ACCOUNT_ID>',
-    "Target GTM account's Account ID"
-  )
-  .requiredOption(
-    '-tc, --target-container <TARGET_CONTAINER_ID>',
-    "Target GTM account's Container ID"
-  )
-  .requiredOption(
-    '-tw, --target-workspace <TARGET_WORKSPACE_ID>',
-    "Target GTM account's Workspace ID"
-  )
-  .option(
-    '-r, --reset',
-    'Reset the target GTM account and copy all entities from the source account'
-  );
+const copyCmdSourceAccountOptions = {
+  primaryOption: new Option(
+    '-saa, --source-account-alias <SOURCE_ACCOUNT_ALIAS>',
+    "Source GTM account's alias as specified in the config"
+  ),
+  conflictingOptions: [
+    new Option(
+      '-sa, --source-account <SOURCE_ACCOUNT_ID>',
+      "Source GTM account's Account ID"
+    ).conflicts('sourceAccountAlias'),
+    new Option(
+      '-sc, --source-container <SOURCE_CONTAINER_ID>',
+      "Source GTM account's Container ID"
+    ).conflicts('sourceAccountAlias'),
+    new Option(
+      '-sw, --source-workspace <SOURCE_WORKSPACE_ID>',
+      "Source GTM account's Workspace ID"
+    ).conflicts('sourceAccountAlias'),
+  ],
+};
+const copyCmdTargetAccountOptions = {
+  primaryOption: new Option(
+    '-taa, --target-account-alias <TARGET_ACCOUNT_ALIAS>',
+    "Target GTM account's alias as specified in the config"
+  ),
+  conflictingOptions: [
+    new Option(
+      '-ta, --target-account <TARGET_ACCOUNT_ID>',
+      "Target GTM account's Account ID"
+    ).conflicts('targetAccountAlias'),
+    new Option(
+      '-tc, --target-container <TARGET_CONTAINER_ID>',
+      "Target GTM account's Container ID"
+    ).conflicts('targetAccountAlias'),
+    new Option(
+      '-tw, --target-workspace <TARGET_WORKSPACE_ID>',
+      "Target GTM account's Workspace ID"
+    ).conflicts('targetAccountAlias'),
+  ],
+};
+
+copy_cmd.addOption(copyCmdSourceAccountOptions.primaryOption);
+copyCmdSourceAccountOptions.conflictingOptions.forEach(op =>
+  copy_cmd.addOption(op)
+);
+copy_cmd.addOption(copyCmdTargetAccountOptions.primaryOption);
+copyCmdTargetAccountOptions.conflictingOptions.forEach(op =>
+  copy_cmd.addOption(op)
+);
+copy_cmd.option(
+  '-r, --reset',
+  'Reset the target GTM account and copy all entities from the source account'
+);
 
 copy_cmd.action(async () => {
-  const sourceAccountId: string = copy_cmd.opts().sourceAccount;
-  const sourceContainerId: string = copy_cmd.opts().sourceContainer;
-  const sourceWorkspaceId: string = copy_cmd.opts().sourceWorkspace;
-  const targetAccountId: string = copy_cmd.opts().targetAccount;
-  const targetContainerId: string = copy_cmd.opts().targetContainer;
-  const targetWorkspaceId: string = copy_cmd.opts().targetWorkspace;
+  try {
+    validateSingleAccountOpts(copyCmdSourceAccountOptions, {
+      accountAlias: copy_cmd.opts().sourceAccountAlias,
+      account: copy_cmd.opts().sourceAccount,
+      workspace: copy_cmd.opts().sourceWorkspace,
+      container: copy_cmd.opts().sourceContainer,
+    });
+  } catch (e) {
+    copy_cmd.error(`error: ${(e as Error).message}`);
+  }
+
+  try {
+    validateSingleAccountOpts(copyCmdTargetAccountOptions, {
+      accountAlias: copy_cmd.opts().targetAccountAlias,
+      account: copy_cmd.opts().targetAccount,
+      workspace: copy_cmd.opts().targetWorkspace,
+      container: copy_cmd.opts().targetContainer,
+    });
+  } catch (e) {
+    copy_cmd.error(`error: ${(e as Error).message}`);
+  }
+
+  const sourceAccountAlias: string = copy_cmd.opts().sourceAccountAlias;
+  let sourceAccountId: string = copy_cmd.opts().sourceAccount;
+  let sourceContainerId: string = copy_cmd.opts().sourceContainer;
+  let sourceWorkspaceId: string = copy_cmd.opts().sourceWorkspace;
+  const targetAccountAlias: string = copy_cmd.opts().targetAccountAlias;
+  let targetAccountId: string = copy_cmd.opts().targetAccount;
+  let targetContainerId: string = copy_cmd.opts().targetContainer;
+  let targetWorkspaceId: string = copy_cmd.opts().targetWorkspace;
   const isReset: boolean = copy_cmd.opts().reset;
+
+  if (sourceAccountAlias !== undefined) {
+    const config = new Config();
+    const sourceAccountConfig = config.getAccount(sourceAccountAlias);
+    sourceAccountId = sourceAccountConfig?.accountId as string;
+    sourceContainerId = sourceAccountConfig?.containerId as string;
+    sourceWorkspaceId = sourceAccountConfig?.workspaceId as string;
+  }
+
+  if (targetAccountAlias !== undefined) {
+    const config = new Config();
+    const targetAccountConfig = config.getAccount(targetAccountAlias);
+    targetAccountId = targetAccountConfig?.accountId as string;
+    targetContainerId = targetAccountConfig?.containerId as string;
+    targetWorkspaceId = targetAccountConfig?.workspaceId as string;
+  }
 
   const sourceAccount: TagManagerData = new TagManagerData(
     sourceAccountId,

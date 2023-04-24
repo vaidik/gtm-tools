@@ -1,7 +1,7 @@
 import {Command, Option} from 'commander';
 import Table from 'cli-table';
 import colors from 'colors';
-import {TagManagerData} from './core.js';
+import {TagManagerData, validateSingleAccountOpts} from './core.js';
 import {Config} from './config.js';
 
 colors.enable();
@@ -64,35 +64,42 @@ async function list(account: TagManagerData) {
 }
 
 const list_cmd = new Command('list');
-list_cmd
-  .option(
+const listCmdOptions = {
+  primaryOption: new Option(
     '-aa, --account-alias <ACCOUNT_ALIAS>',
     "GTM account's alias as specified in the config"
-  )
-  .addOption(
+  ),
+  conflictingOptions: [
     new Option(
       '-a, --account <ACCOUNT_ID>',
       "GTM account's Account ID"
-    ).conflicts('accountAlias')
-  )
-  .addOption(
+    ).conflicts('accountAlias'),
     new Option(
       '-c, --container <CONTAINER_ID>',
       "GTM account's Container ID"
-    ).conflicts('accountAlias')
-  )
-  .addOption(
+    ).conflicts('accountAlias'),
     new Option(
       '-w, --workspace <WORKSPACE_ID>',
       "GTM account's Workspace ID"
-    ).conflicts('accountAlias')
-  );
+    ).conflicts('accountAlias'),
+  ],
+};
+
+list_cmd.addOption(listCmdOptions.primaryOption);
+listCmdOptions.conflictingOptions.forEach(op => list_cmd.addOption(op));
 
 list_cmd.action(async () => {
+  try {
+    validateSingleAccountOpts(listCmdOptions, list_cmd.opts());
+  } catch (e) {
+    list_cmd.error(`error: ${(e as Error).message}`);
+  }
+
   const accountAlias: string = list_cmd.opts().accountAlias;
   let accountId: string = list_cmd.opts().account;
   let containerId: string = list_cmd.opts().container;
   let workspaceId: string = list_cmd.opts().workspace;
+
   if (accountAlias !== undefined) {
     const config = new Config();
     const accountConfig = config.getAccount(accountAlias);
