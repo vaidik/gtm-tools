@@ -33,14 +33,14 @@ async function list(account: TagManagerData) {
       tag.tagId as string,
       tag.name as string,
       tag.type as string,
-      tag.firingTriggerId
+      (tag.firingTriggerId
         ?.map(
           x =>
             `${account.triggers?.get(x)?.name} (${
               account.triggers?.get(x)?.triggerId
             })`
         )
-        .join(', ') as string,
+        .join(', ') ?? '') as string,
     ]);
   });
   console.log('==> Tags'.blue, `(${account.tags.size} tags)`);
