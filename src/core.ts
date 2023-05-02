@@ -12,6 +12,12 @@ class CopyResponse<T> {
   }
 }
 
+interface response {
+  variables: GaxiosResponse[],
+  tags: GaxiosResponse[],
+  triggers: GaxiosResponse[],
+}
+
 export class TagManagerData {
   accountId: string;
   containerId: string;
@@ -134,7 +140,7 @@ export class TagManagerData {
       await Promise.all(
         Array.from(sourceVariables.values()).map(async val => {
           console.log(
-            `====> Coping variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+            `==> Coping variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
               .grey
           );
           const response = await this.copyVariable(val);
@@ -146,28 +152,139 @@ export class TagManagerData {
     return Promise.resolve(responses);
   }
 
+  private async batchPromise(task: any, items: any[], batchSize: number = 3, batchDelay: number = 500): Promise<any[]> {
+    let position = 0;
+    let results: any[] = [];
+    while (position < items.length) {
+        const itemsForBatch = items.slice(position, position + batchSize);
+        results = [...results, ...await Promise.all(itemsForBatch.map(item => task(item)))];
+        position += batchSize;
+        await new Promise(r => setTimeout(r, batchDelay));
+    }
+    return Promise.all(results);
+  }
+
   async reset() {
     if (!this.isResettable)
       throw Error(
         `This GTM account (Account ID: ${this.accountId}) is not resettable.`
       );
-    const responses: GaxiosResponse[] = [];
-    await Promise.all(
-      Array.from(this.variables.values()).map(async val => {
+
+    const responses: response = {
+      triggers: [] as GaxiosResponse[],
+      tags: [] as GaxiosResponse[],
+      variables: [] as GaxiosResponse[],
+    }
+
+    try {
+      const variables = Array.from(this.variables.values());
+      console.log(variables.filter(variable => variable.type === 'jsm'));
+      variables.filter(variable => variable.type === 'jsm').batchMap(async (val: any) => {
         console.log(
-          `====> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+          `==> Deleting variable (jsm) - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
             .grey
         );
         const response =
           await this.gtmClient.accounts.containers.workspaces.variables.delete({
             path: `${this.parent}/variables/${val.variableId}`,
           });
-        responses.push(response);
+        responses.variables.push(response);
+      }, 5, 500);
+      // await batchPromise(variables.filter(variable => variable.type === 'jsm'))(async (val: any) => {
+      //     console.log(
+      //       `==> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+      //         .grey
+      //     );
+      //     const response =
+      //       await this.gtmClient.accounts.containers.workspaces.variables.delete({
+      //         path: `${this.parent}/variables/${val.variableId}`,
+      //       });
+      //     responses.variables.push(response);
+      //   });
+
+      await this.batchPromise(async (val: any) => {
+        console.log(
+          `==> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+            .grey
+        );
+        const response =
+          await this.gtmClient.accounts.containers.workspaces.variables.delete({
+            path: `${this.parent}/variables/${val.variableId}`,
+          });
+        responses.variables.push(response);
+      }, variables.filter(variable => variable.type !== 'jsm'), 5);
+    } catch (e) {
+      console.log(e);
+    }
+
+    await Promise.all(
+      Array.from(this.tags.values()).map(async val => {
+        console.log(
+          `==> Deleting tag - Tag ID: ${val.tagId}, Tag Name: ${val.name}`
+            .grey
+        );
+        const response =
+          await this.gtmClient.accounts.containers.workspaces.tags.delete({
+            path: `${this.parent}/tags/${val.tagId}`,
+          });
+        responses.tags.push(response);
+      })
+    );
+
+    await Promise.all(
+      Array.from(this.triggers.values()).map(async val => {
+        console.log(
+          `==> Deleting trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
+            .grey
+        );
+        const response =
+          await this.gtmClient.accounts.containers.workspaces.triggers.delete({
+            path: `${this.parent}/triggers/${val.triggerId}`,
+          });
+        responses.triggers.push(response);
       })
     );
 
     return Promise.resolve(responses);
   }
+}
+
+declare global { 
+  interface Array<T> {
+    batchMap(
+      task: (item: T) => any,
+      batchSize: number,
+      delay: number
+    ): Promise<Array<T>>;
+  }
+}
+
+Array.prototype.batchMap = async function (task: (item: any) => any, batchSize: number = 5, delay: number = 0) {
+  let results: any[] = [];
+  let position = 0;
+  while (position < this.length) {
+    const itemsForBatch = Array.from(this.values()).slice(position, position + batchSize);
+    results = [...results, ...await Promise.all(itemsForBatch.map((item: any) => task(item)))];
+    position += batchSize;
+    console.log('waiting', delay);
+    await new Promise(r => setTimeout(r, delay));
+    console.log('waited', delay);
+  }
+  return Promise.resolve(results);
+}
+
+function batchPromise(items: any[], batchSize: number = 5, batchDelay: number = 500): any {
+  return async (task: any): Promise<any> => {
+    let position = 0;
+    let results: any[] = [];
+    while (position < items.length) {
+        const itemsForBatch = items.slice(position, position + batchSize);
+        results = [...results, ...await Promise.all(itemsForBatch.map(item => task(item)))];
+        position += batchSize;
+        await new Promise(r => setTimeout(r, batchDelay));
+    }
+    return Promise.all(results);
+  };
 }
 
 export function validateSingleAccountOpts(
