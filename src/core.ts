@@ -178,10 +178,14 @@ export class TagManagerData {
 
     try {
       const variables = Array.from(this.variables.values());
-      console.log(variables.filter(variable => variable.type === 'jsm'));
-      variables.filter(variable => variable.type === 'jsm').batchMap(async (val: any) => {
+
+      // First delete variables of type `jsm` because they could have
+      // other variables that depend on them. So the variables that other 
+      // variables depend on cannot be deleted unless the dependent variables
+      // are deleted first.
+      await this.batchPromise(async (val: any) => {
         console.log(
-          `==> Deleting variable (jsm) - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+          `==> Deleting variable - Variable ID (jsm): ${val.variableId}, Variable Name: ${val.name}`
             .grey
         );
         const response =
@@ -189,18 +193,7 @@ export class TagManagerData {
             path: `${this.parent}/variables/${val.variableId}`,
           });
         responses.variables.push(response);
-      }, 5, 500);
-      // await batchPromise(variables.filter(variable => variable.type === 'jsm'))(async (val: any) => {
-      //     console.log(
-      //       `==> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
-      //         .grey
-      //     );
-      //     const response =
-      //       await this.gtmClient.accounts.containers.workspaces.variables.delete({
-      //         path: `${this.parent}/variables/${val.variableId}`,
-      //       });
-      //     responses.variables.push(response);
-      //   });
+      }, variables.filter(variable => variable.type === 'jsm'), 5);
 
       await this.batchPromise(async (val: any) => {
         console.log(
@@ -247,44 +240,6 @@ export class TagManagerData {
 
     return Promise.resolve(responses);
   }
-}
-
-declare global { 
-  interface Array<T> {
-    batchMap(
-      task: (item: T) => any,
-      batchSize: number,
-      delay: number
-    ): Promise<Array<T>>;
-  }
-}
-
-Array.prototype.batchMap = async function (task: (item: any) => any, batchSize: number = 5, delay: number = 0) {
-  let results: any[] = [];
-  let position = 0;
-  while (position < this.length) {
-    const itemsForBatch = Array.from(this.values()).slice(position, position + batchSize);
-    results = [...results, ...await Promise.all(itemsForBatch.map((item: any) => task(item)))];
-    position += batchSize;
-    console.log('waiting', delay);
-    await new Promise(r => setTimeout(r, delay));
-    console.log('waited', delay);
-  }
-  return Promise.resolve(results);
-}
-
-function batchPromise(items: any[], batchSize: number = 5, batchDelay: number = 500): any {
-  return async (task: any): Promise<any> => {
-    let position = 0;
-    let results: any[] = [];
-    while (position < items.length) {
-        const itemsForBatch = items.slice(position, position + batchSize);
-        results = [...results, ...await Promise.all(itemsForBatch.map(item => task(item)))];
-        position += batchSize;
-        await new Promise(r => setTimeout(r, batchDelay));
-    }
-    return Promise.all(results);
-  };
 }
 
 export function validateSingleAccountOpts(

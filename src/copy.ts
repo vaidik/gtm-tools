@@ -13,7 +13,7 @@ async function copy(
   sourceAccount: TagManagerData,
   targetAccount: TagManagerData
 ) {
-  console.log('Copied entities successfully'.green);
+  console.log('Copied entities successfully'.green);  // TODO: fix this log
   return await targetAccount.copyData(sourceAccount.variables);
 }
 
