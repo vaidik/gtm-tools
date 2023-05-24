@@ -128,25 +128,80 @@ export class TagManagerData {
     return response;
   }
 
-  async copyData(
-    sourceVariables: Map<string, tagmanager_v2.Schema$Variable> | undefined
+  async copyTrigger(
+    val: tagmanager_v2.Schema$Trigger
+  ): Promise<CopyResponse<tagmanager_v2.Schema$Trigger>> {
+    const requestBody: tagmanager_v2.Schema$Trigger = {
+      ...val,
+    };
+    const response: CopyResponse<tagmanager_v2.Schema$Trigger> =
+      new CopyResponse<tagmanager_v2.Schema$Trigger>(requestBody);
+    requestBody.workspaceId = this.workspaceId;
+    requestBody.accountId = this.accountId;
+    requestBody.containerId = this.containerId;
+    delete requestBody.triggerId;
+    delete requestBody.path;
+    delete requestBody.fingerprint;
+
+    try {
+      const res =
+        this.gtmClient.accounts.containers.workspaces.triggers.create({
+          parent: this.parent,
+          requestBody: requestBody,
+        });
+      response.response = res;
+      await res;
+    } catch (e) {
+      response.error = e as Error;
+    }
+
+    return response;
+  }
+
+  async copyDataFromAccount(
+    sourceAccount: TagManagerData
   ): Promise<Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>> {
     const responses: Map<
       string,
       CopyResponse<tagmanager_v2.Schema$Variable>
     > = new Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>();
 
-    if (sourceVariables !== undefined) {
+    // TODO: find a better way of doing this
+    console.log('waiting');
+    await new Promise(f => setTimeout(f, 10000));
+
+    if (sourceAccount.variables !== undefined) {
       await Promise.all(
-        Array.from(sourceVariables.values()).map(async val => {
+        Array.from(sourceAccount.variables.values()).map(async val => {
           console.log(
-            `==> Coping variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+            `==> Copying variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
               .grey
           );
           const response = await this.copyVariable(val);
           responses.set(val.variableId as string, response);
         })
       );
+
+      // TODO: find a better way of doing this
+      console.log('waiting');
+      await new Promise(f => setTimeout(f, 10000));
+    }
+
+    if (sourceAccount.triggers !== undefined) {
+      await Promise.all(
+        Array.from(sourceAccount.triggers.values()).map(async val => {
+          console.log(
+            `==> Copying trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
+              .grey
+          );
+          const response = await this.copyTrigger(val);
+          responses.set(val.triggerId as string, response);
+        })
+      );
+
+      // TODO: find a better way of doing this
+      console.log('waiting');
+      await new Promise(f => setTimeout(f, 1000));
     }
 
     return Promise.resolve(responses);
