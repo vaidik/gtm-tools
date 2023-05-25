@@ -89,7 +89,9 @@ reset_cmd.action(async () => {
   }
 
   if (!isResettable) {
-    reset_cmd.error(`error: This GTM account (Account ID: ${accountId}) is not resettable.`);
+    reset_cmd.error(
+      `error: This GTM account (Account ID: ${accountId}) is not resettable.`
+    );
   }
 
   const account: TagManagerData = new TagManagerData(
@@ -122,7 +124,7 @@ reset_cmd.action(async () => {
     .then(async answers => {
       if (answers.continueReset) {
         console.log('Resetting GTM account...'.gray);
-        const responses = await account.reset();
+        await account.reset();
         console.log('Resetting GTM account complete'.green);
       }
     })

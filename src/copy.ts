@@ -14,7 +14,7 @@ async function copy(
   sourceAccount: TagManagerData,
   targetAccount: TagManagerData
 ) {
-  console.log('Copied entities successfully'.green);  // TODO: fix this log
+  console.log('Copied entities successfully'.green); // TODO: fix this log
   return await targetAccount.copyDataFromAccount(sourceAccount);
 }
 
@@ -189,8 +189,8 @@ copy_cmd.action(async () => {
                 ? 'Copy Successful'
                 : 'Copy Failed',
               responses.get(triggerId)?.error !== undefined
-                ? (responses.get(triggerId)?.error?.message) as string
-                : ''
+                ? (responses.get(triggerId)?.error?.message as string)
+                : '',
             ]);
           });
           console.log(
