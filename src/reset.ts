@@ -1,17 +1,18 @@
 import {Command, Option} from 'commander';
 import Table from 'cli-table';
 import colors from 'colors';
+import inquirer from 'inquirer';
+import {list} from './list.js';
 import {TagManagerData, validateSingleAccountOpts} from './core.js';
 import {Config} from './config.js';
 
 colors.enable();
 
-async function list(account: TagManagerData) {
+async function reset(account: TagManagerData) {
   await account.getData();
 
-  // Variables
   const variablesTable = new Table({
-    head: ['Variable ID', 'Name', 'Type'],
+    head: ['Variable ID', 'Name', 'Type', 'Last Edited'],
   });
   account.variables.forEach(val => {
     variablesTable.push([
@@ -24,38 +25,16 @@ async function list(account: TagManagerData) {
   console.log(variablesTable.toString());
   console.log('\n');
 
-  // Triggers
-  const triggersTable = new Table({
-    head: ['Trigger ID', 'Name', 'Type'],
-  });
-  account.triggers?.forEach(trigger => {
-    triggersTable.push([
-      trigger.triggerId as string,
-      trigger.name as string,
-      trigger.type as string,
-    ]);
-  });
-  console.log('==> Triggers'.blue, `(${account.triggers.size} triggers)`);
-  console.log(triggersTable.toString());
-  console.log('\n');
-
-  // Tags
   const tagsTable = new Table({
-    head: ['Tag ID', 'Name', 'Type', 'Firing Triggers (Trigger ID)'],
+    head: ['Name', 'Type', 'Firing Triggers', 'Last Edited'],
   });
   account.tags?.forEach(tag => {
     tagsTable.push([
-      tag.tagId as string,
       tag.name as string,
       tag.type as string,
-      (tag.firingTriggerId
-        ?.map(
-          x =>
-            `${account.triggers?.get(x)?.name} (${
-              account.triggers?.get(x)?.triggerId
-            })`
-        )
-        .join(', ') ?? '') as string,
+      tag.firingTriggerId
+        ?.map(x => account.triggers?.get(x)?.name)
+        .join(', ') as string,
     ]);
   });
   console.log('==> Tags'.blue, `(${account.tags.size} tags)`);
@@ -63,8 +42,8 @@ async function list(account: TagManagerData) {
   console.log('\n');
 }
 
-const list_cmd = new Command('list');
-const listCmdOptions = {
+const reset_cmd = new Command('reset');
+const resetCmdOptions = {
   primaryOption: new Option(
     '-aa, --account-alias <ACCOUNT_ALIAS>',
     "GTM account's alias as specified in the config"
@@ -84,21 +63,21 @@ const listCmdOptions = {
     ).conflicts('accountAlias'),
   ],
 };
+reset_cmd.addOption(resetCmdOptions.primaryOption);
+resetCmdOptions.conflictingOptions.forEach(op => reset_cmd.addOption(op));
 
-list_cmd.addOption(listCmdOptions.primaryOption);
-listCmdOptions.conflictingOptions.forEach(op => list_cmd.addOption(op));
-
-list_cmd.action(async () => {
+reset_cmd.action(async () => {
   try {
-    validateSingleAccountOpts(listCmdOptions, list_cmd.opts());
+    validateSingleAccountOpts(resetCmdOptions, reset_cmd.opts());
   } catch (e) {
-    list_cmd.error(`error: ${(e as Error).message}`);
+    reset_cmd.error(`error: ${(e as Error).message}`);
   }
 
-  const accountAlias: string = list_cmd.opts().accountAlias;
-  let accountId: string = list_cmd.opts().account;
-  let containerId: string = list_cmd.opts().container;
-  let workspaceId: string = list_cmd.opts().workspace;
+  const accountAlias: string = reset_cmd.opts().accountAlias;
+  let accountId: string = reset_cmd.opts().account;
+  let containerId: string = reset_cmd.opts().container;
+  let workspaceId: string = reset_cmd.opts().workspace;
+  let isResettable = true;
 
   if (accountAlias !== undefined) {
     const config = new Config();
@@ -106,16 +85,52 @@ list_cmd.action(async () => {
     accountId = accountConfig?.accountId as string;
     containerId = accountConfig?.containerId as string;
     workspaceId = accountConfig?.workspaceId as string;
+    isResettable = accountConfig?.isResettable as boolean;
+  }
+
+  if (!isResettable) {
+    reset_cmd.error(
+      `error: This GTM account (Account ID: ${accountId}) is not resettable.`
+    );
   }
 
   const account: TagManagerData = new TagManagerData(
     accountId,
     containerId,
-    workspaceId
+    workspaceId,
+    isResettable
   );
   await account.init();
-
   await list(account);
+
+  if (
+    account.variables.size === 0 &&
+    account.tags.size === 0 &&
+    account.triggers.size === 0
+  ) {
+    console.log('There is no data in this GTM account to delete'.yellow);
+    return;
+  }
+
+  inquirer
+    .prompt([
+      {
+        type: 'confirm',
+        name: 'continueReset',
+        message: 'Do you want to continue to reset the this GTM account?',
+        default: false,
+      },
+    ])
+    .then(async answers => {
+      if (answers.continueReset) {
+        console.log('Resetting GTM account...'.gray);
+        await account.reset();
+        console.log('Resetting GTM account complete'.green);
+      }
+    })
+    .catch(error => {
+      console.log(error);
+    });
 });
 
-export {list_cmd, list};
+export {reset_cmd, reset};

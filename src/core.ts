@@ -1,6 +1,7 @@
 import {GaxiosResponse, GaxiosPromise} from 'gaxios';
 import {google, tagmanager_v2} from 'googleapis';
 import {Option} from 'commander';
+import {Config} from './config.js';
 
 class CopyResponse<T> {
   public requestBody: T;
@@ -10,6 +11,12 @@ class CopyResponse<T> {
   constructor(requestBody: T) {
     this.requestBody = requestBody;
   }
+}
+
+interface response {
+  variables: GaxiosResponse[];
+  tags: GaxiosResponse[];
+  triggers: GaxiosResponse[];
 }
 
 export class TagManagerData {
@@ -22,6 +29,7 @@ export class TagManagerData {
   isResettable: boolean;
   private gtmClient: tagmanager_v2.Tagmanager;
   private parent: string;
+  private config: Config = new Config();
 
   constructor(
     accountId: string,
@@ -122,28 +130,128 @@ export class TagManagerData {
     return response;
   }
 
-  async copyData(
-    sourceVariables: Map<string, tagmanager_v2.Schema$Variable> | undefined
+  async copyTrigger(
+    val: tagmanager_v2.Schema$Trigger
+  ): Promise<CopyResponse<tagmanager_v2.Schema$Trigger>> {
+    const requestBody: tagmanager_v2.Schema$Trigger = {
+      ...val,
+    };
+    const response: CopyResponse<tagmanager_v2.Schema$Trigger> =
+      new CopyResponse<tagmanager_v2.Schema$Trigger>(requestBody);
+    requestBody.workspaceId = this.workspaceId;
+    requestBody.accountId = this.accountId;
+    requestBody.containerId = this.containerId;
+    delete requestBody.triggerId;
+    delete requestBody.path;
+    delete requestBody.fingerprint;
+
+    try {
+      const res = this.gtmClient.accounts.containers.workspaces.triggers.create(
+        {
+          parent: this.parent,
+          requestBody: requestBody,
+        }
+      );
+      response.response = res;
+      await res;
+    } catch (e) {
+      response.error = e as Error;
+    }
+
+    return response;
+  }
+
+  async copyTag(
+    val: tagmanager_v2.Schema$Tag
+  ): Promise<CopyResponse<tagmanager_v2.Schema$Tag>> {
+    const requestBody: tagmanager_v2.Schema$Tag = {
+      ...val,
+    };
+    const response: CopyResponse<tagmanager_v2.Schema$Tag> =
+      new CopyResponse<tagmanager_v2.Schema$Tag>(requestBody);
+    requestBody.workspaceId = this.workspaceId;
+    requestBody.accountId = this.accountId;
+    requestBody.containerId = this.containerId;
+    delete requestBody.tagId;
+    delete requestBody.path;
+    delete requestBody.fingerprint;
+    console.log(val);
+
+    try {
+      const res = this.gtmClient.accounts.containers.workspaces.tags.create({
+        parent: this.parent,
+        requestBody: requestBody,
+      });
+      response.response = res;
+      await res;
+    } catch (e) {
+      response.error = e as Error;
+    }
+
+    return response;
+  }
+
+  async copyDataFromAccount(
+    sourceAccount: TagManagerData
   ): Promise<Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>> {
     const responses: Map<
       string,
       CopyResponse<tagmanager_v2.Schema$Variable>
     > = new Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>();
 
-    if (sourceVariables !== undefined) {
-      await Promise.all(
-        Array.from(sourceVariables.values()).map(async val => {
-          console.log(
-            `====> Coping variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
-              .grey
-          );
-          const response = await this.copyVariable(val);
-          responses.set(val.variableId as string, response);
-        })
-      );
+    if (sourceAccount.variables !== undefined) {
+      await this.batchPromise(async (val: any) => {
+        console.log(
+          `==> Copying variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+            .grey
+        );
+        const response = await this.copyVariable(val);
+        responses.set(val.variableId as string, response);
+      }, Array.from(sourceAccount.variables.values()));
+    }
+
+    if (sourceAccount.triggers !== undefined) {
+      await this.batchPromise(async (val: any) => {
+        console.log(
+          `==> Copying trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
+            .grey
+        );
+        const response = await this.copyTrigger(val);
+        responses.set(val.triggerId as string, response);
+      }, Array.from(sourceAccount.triggers.values()));
+    }
+
+    if (sourceAccount.tags !== undefined) {
+      await this.batchPromise(async (val: any) => {
+        console.log(
+          `==> Copying tag - Tag ID: ${val.tagId}, Tag Name: ${val.name}`.grey
+        );
+        const response = await this.copyTag(val);
+        responses.set(val.tagId as string, response);
+      }, Array.from(sourceAccount.tags.values()));
     }
 
     return Promise.resolve(responses);
+  }
+
+  private async batchPromise(
+    task: any,
+    items: any[],
+    batchSize: number = this.config.tagManagerAPI.defaultRateLimitBatchSize,
+    batchDelay: number = this.config.tagManagerAPI.defaultRateLimitBatchDelay
+  ): Promise<any[]> {
+    let position = 0;
+    let results: any[] = [];
+    while (position < items.length) {
+      const itemsForBatch = items.slice(position, position + batchSize);
+      results = [
+        ...results,
+        ...(await Promise.all(itemsForBatch.map(item => task(item)))),
+      ];
+      position += batchSize;
+      await new Promise(r => setTimeout(r, batchDelay));
+    }
+    return Promise.all(results);
   }
 
   async reset() {
@@ -151,22 +259,81 @@ export class TagManagerData {
       throw Error(
         `This GTM account (Account ID: ${this.accountId}) is not resettable.`
       );
-    const responses: GaxiosResponse[] = [];
-    console.log('resetting', this.variables.size);
-    await Promise.all(
-      Array.from(this.variables.values()).map(async val => {
+
+    const responses: response = {
+      triggers: [] as GaxiosResponse[],
+      tags: [] as GaxiosResponse[],
+      variables: [] as GaxiosResponse[],
+    };
+
+    try {
+      const tags = Array.from(this.tags.values());
+      const variables = Array.from(this.variables.values());
+      const triggers = Array.from(this.triggers.values());
+
+      await this.batchPromise(async (val: any) => {
         console.log(
-          `====> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+          `==> Deleting tag - Tag ID: ${val.tagId}, Tag Name: ${val.name}`.grey
+        );
+        const response =
+          await this.gtmClient.accounts.containers.workspaces.tags.delete({
+            path: `${this.parent}/tags/${val.tagId}`,
+          });
+        responses.tags.push(response);
+      }, tags);
+
+      // First delete variables of type `jsm` because they could have
+      // other variables that depend on them. So the variables that other
+      // variables depend on cannot be deleted unless the dependent variables
+      // are deleted first.
+      await this.batchPromise(
+        async (val: any) => {
+          console.log(
+            `==> Deleting variable - Variable ID (jsm): ${val.variableId}, Variable Name: ${val.name}`
+              .grey
+          );
+          const response =
+            await this.gtmClient.accounts.containers.workspaces.variables.delete(
+              {
+                path: `${this.parent}/variables/${val.variableId}`,
+              }
+            );
+          responses.variables.push(response);
+        },
+        variables.filter(variable => variable.type === 'jsm')
+      );
+
+      await this.batchPromise(
+        async (val: any) => {
+          console.log(
+            `==> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
+              .grey
+          );
+          const response =
+            await this.gtmClient.accounts.containers.workspaces.variables.delete(
+              {
+                path: `${this.parent}/variables/${val.variableId}`,
+              }
+            );
+          responses.variables.push(response);
+        },
+        variables.filter(variable => variable.type !== 'jsm')
+      );
+
+      await this.batchPromise(async (val: any) => {
+        console.log(
+          `==> Deleting trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
             .grey
         );
         const response =
-          await this.gtmClient.accounts.containers.workspaces.variables.delete({
-            path: `${this.parent}/variables/${val.variableId}`,
+          await this.gtmClient.accounts.containers.workspaces.triggers.delete({
+            path: `${this.parent}/triggers/${val.triggerId}`,
           });
-        console.log(response);
-        responses.push(response);
-      })
-    );
+        responses.triggers.push(response);
+      }, triggers);
+    } catch (e) {
+      console.log(e);
+    }
 
     return Promise.resolve(responses);
   }

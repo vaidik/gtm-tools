@@ -9,12 +9,13 @@ import Table from 'cli-table';
 
 colors.enable();
 
+// TODO: this is not a good function at all, just another indirection
 async function copy(
   sourceAccount: TagManagerData,
   targetAccount: TagManagerData
 ) {
-  console.log('Copied entities successfully'.green);
-  return await targetAccount.copyData(sourceAccount.variables);
+  console.log('Copied entities successfully'.green); // TODO: fix this log
+  return await targetAccount.copyDataFromAccount(sourceAccount);
 }
 
 const copy_cmd = new Command('copy');
@@ -174,6 +175,29 @@ copy_cmd.action(async () => {
             `(${sourceAccount.variables.size} variables)`
           );
           console.log(variablesTable.toString());
+          console.log('\n');
+
+          const triggersTable = new Table({
+            head: ['Trigger ID', 'Name', 'Type', 'Copy Status', 'Reason'],
+          });
+          sourceAccount.triggers.forEach((val, triggerId) => {
+            triggersTable.push([
+              triggerId as string,
+              val.name as string,
+              val.type as string,
+              responses.get(triggerId)?.error === undefined
+                ? 'Copy Successful'
+                : 'Copy Failed',
+              responses.get(triggerId)?.error !== undefined
+                ? (responses.get(triggerId)?.error?.message as string)
+                : '',
+            ]);
+          });
+          console.log(
+            '==> Triggers'.blue,
+            `(${sourceAccount.triggers.size} triggers)`
+          );
+          console.log(triggersTable.toString());
           console.log('\n');
         }
       })

@@ -1,7 +1,14 @@
 import 'reflect-metadata';
 import {Type} from 'class-transformer';
 
-import {ValidateNested, IsBoolean, IsString, IsOptional} from 'class-validator';
+import {
+  ValidateNested,
+  IsBoolean,
+  IsString,
+  IsOptional,
+  IsNumber,
+  IsPositive,
+} from 'class-validator';
 
 class AccountConfig {
   @IsString()
@@ -33,19 +40,47 @@ class AccountConfig {
   }
 }
 
+class TagManagerAPIConfig {
+  @IsNumber()
+  @IsPositive()
+  defaultRateLimitBatchSize: number;
+
+  @IsNumber()
+  @IsPositive()
+  defaultRateLimitBatchDelay: number;
+
+  constructor(
+    defaultRateLimitBatchSize = 5, // 15 requests per minute
+    defaultRateLimitBatchDelay = 15000 // 15 seconds
+  ) {
+    this.defaultRateLimitBatchSize = defaultRateLimitBatchSize;
+    this.defaultRateLimitBatchDelay = defaultRateLimitBatchDelay;
+  }
+}
+
 export class Config {
   private static instance: Config;
+
+  @ValidateNested()
+  @Type(() => TagManagerAPIConfig)
+  tagManagerAPI: TagManagerAPIConfig;
 
   @ValidateNested()
   @Type(() => AccountConfig)
   accounts?: AccountConfig[];
 
-  constructor(accounts?: AccountConfig[]) {
+  constructor(tagManagerAPI?: TagManagerAPIConfig, accounts?: AccountConfig[]) {
+    if (tagManagerAPI === undefined) {
+      this.tagManagerAPI = new TagManagerAPIConfig();
+    } else {
+      this.tagManagerAPI = tagManagerAPI;
+    }
+    this.accounts = accounts;
+
     if (Config.instance) {
       return Config.instance;
     }
 
-    this.accounts = accounts;
     Config.instance = this;
   }
 
