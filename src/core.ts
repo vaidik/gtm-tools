@@ -1,11 +1,11 @@
-import {GaxiosResponse, GaxiosPromise} from 'gaxios';
+import {GaxiosResponse} from 'gaxios';
 import {google, tagmanager_v2} from 'googleapis';
 import {Option} from 'commander';
 import {Config} from './config.js';
 
 class CopyResponse<T> {
   public requestBody: T;
-  public response: GaxiosPromise<T> | undefined;
+  public response: GaxiosResponse<T> | undefined;
   public error: Error | undefined;
 
   constructor(requestBody: T) {
@@ -18,6 +18,33 @@ interface response {
   tags: GaxiosResponse[];
   triggers: GaxiosResponse[];
 }
+
+export type CopyAccountDataResponse = {
+  variables: Map<
+    string,
+    {
+      sourceVariableId: string;
+      targetVariableId: string;
+      response: CopyResponse<tagmanager_v2.Schema$Variable>;
+    }
+  >;
+  triggers: Map<
+    string,
+    {
+      sourceTriggerId: string;
+      targetTriggerId: string;
+      response: CopyResponse<tagmanager_v2.Schema$Trigger>;
+    }
+  >;
+  tags: Map<
+    string,
+    {
+      sourceTagId: string;
+      targetTagId: string;
+      response: CopyResponse<tagmanager_v2.Schema$Tag>;
+    }
+  >;
+};
 
 export class TagManagerData {
   accountId: string;
@@ -121,8 +148,7 @@ export class TagManagerData {
           parent: this.parent,
           requestBody: requestBody,
         });
-      response.response = res;
-      await res;
+      response.response = await res;
     } catch (e) {
       response.error = e as Error;
     }
@@ -152,7 +178,7 @@ export class TagManagerData {
           requestBody: requestBody,
         }
       );
-      response.response = res;
+      response.response = await res;
       await res;
     } catch (e) {
       response.error = e as Error;
@@ -162,7 +188,8 @@ export class TagManagerData {
   }
 
   async copyTag(
-    val: tagmanager_v2.Schema$Tag
+    val: tagmanager_v2.Schema$Tag,
+    newFiringTriggerId: string[]
   ): Promise<CopyResponse<tagmanager_v2.Schema$Tag>> {
     const requestBody: tagmanager_v2.Schema$Tag = {
       ...val,
@@ -172,17 +199,17 @@ export class TagManagerData {
     requestBody.workspaceId = this.workspaceId;
     requestBody.accountId = this.accountId;
     requestBody.containerId = this.containerId;
+    requestBody.firingTriggerId = newFiringTriggerId;
     delete requestBody.tagId;
     delete requestBody.path;
     delete requestBody.fingerprint;
-    console.log(val);
 
     try {
       const res = this.gtmClient.accounts.containers.workspaces.tags.create({
         parent: this.parent,
         requestBody: requestBody,
       });
-      response.response = res;
+      response.response = await res;
       await res;
     } catch (e) {
       response.error = e as Error;
@@ -193,55 +220,108 @@ export class TagManagerData {
 
   async copyDataFromAccount(
     sourceAccount: TagManagerData
-  ): Promise<Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>> {
-    const responses: Map<
-      string,
-      CopyResponse<tagmanager_v2.Schema$Variable>
-    > = new Map<string, CopyResponse<tagmanager_v2.Schema$Variable>>();
+  ): Promise<CopyAccountDataResponse> {
+    const accountDataResponse: CopyAccountDataResponse = {
+      variables: new Map<
+        string,
+        {
+          sourceVariableId: string;
+          targetVariableId: string;
+          response: CopyResponse<tagmanager_v2.Schema$Variable>;
+        }
+      >(),
+      triggers: new Map<
+        string,
+        {
+          sourceTriggerId: string;
+          targetTriggerId: string;
+          response: CopyResponse<tagmanager_v2.Schema$Trigger>;
+        }
+      >(),
+      tags: new Map<
+        string,
+        {
+          sourceTagId: string;
+          targetTagId: string;
+          response: CopyResponse<tagmanager_v2.Schema$Tag>;
+        }
+      >(),
+    };
 
     if (sourceAccount.variables !== undefined) {
-      await this.batchPromise(async (val: any) => {
+      await this.batchPromise(async (val: tagmanager_v2.Schema$Variable) => {
         console.log(
           `==> Copying variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
             .grey
         );
         const response = await this.copyVariable(val);
-        responses.set(val.variableId as string, response);
+        this.variables.set(
+          response.response?.data?.variableId as string,
+          response.response?.data as tagmanager_v2.Schema$Variable
+        );
+        accountDataResponse.variables.set(val.variableId as string, {
+          sourceVariableId: val.variableId as string,
+          targetVariableId: response.response?.data?.variableId as string,
+          response: response,
+        });
       }, Array.from(sourceAccount.variables.values()));
     }
 
     if (sourceAccount.triggers !== undefined) {
-      await this.batchPromise(async (val: any) => {
+      await this.batchPromise(async (val: tagmanager_v2.Schema$Trigger) => {
         console.log(
           `==> Copying trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
             .grey
         );
         const response = await this.copyTrigger(val);
-        responses.set(val.triggerId as string, response);
+        this.triggers.set(
+          response.response?.data?.triggerId as string,
+          response.response?.data as tagmanager_v2.Schema$Trigger
+        );
+        accountDataResponse.triggers.set(val.triggerId as string, {
+          sourceTriggerId: val.triggerId as string,
+          targetTriggerId: response.response?.data?.triggerId as string,
+          response: response,
+        });
       }, Array.from(sourceAccount.triggers.values()));
     }
 
     if (sourceAccount.tags !== undefined) {
-      await this.batchPromise(async (val: any) => {
+      await this.batchPromise(async (val: tagmanager_v2.Schema$Tag) => {
         console.log(
           `==> Copying tag - Tag ID: ${val.tagId}, Tag Name: ${val.name}`.grey
         );
-        const response = await this.copyTag(val);
-        responses.set(val.tagId as string, response);
+        const newFiringTriggerId: string[] =
+          val?.firingTriggerId !== undefined
+            ? (val.firingTriggerId as string[]).map((triggerId: string) => {
+                return accountDataResponse.triggers.get(triggerId)
+                  ?.targetTriggerId as string;
+              })
+            : [];
+        const response = await this.copyTag(val, newFiringTriggerId);
+        this.tags.set(
+          response.response?.data?.tagId as string,
+          response.response?.data as tagmanager_v2.Schema$Tag
+        );
+        accountDataResponse.tags.set(val.tagId as string, {
+          sourceTagId: val.tagId as string,
+          targetTagId: response.response?.data?.tagId as string,
+          response: response,
+        });
       }, Array.from(sourceAccount.tags.values()));
     }
 
-    return Promise.resolve(responses);
+    return Promise.resolve(accountDataResponse);
   }
 
-  private async batchPromise(
-    task: any,
-    items: any[],
+  private async batchPromise<F extends (arg: T) => unknown, T>(
+    task: F,
+    items: T[],
     batchSize: number = this.config.tagManagerAPI.defaultRateLimitBatchSize,
     batchDelay: number = this.config.tagManagerAPI.defaultRateLimitBatchDelay
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     let position = 0;
-    let results: any[] = [];
+    let results: unknown[] = [];
     while (position < items.length) {
       const itemsForBatch = items.slice(position, position + batchSize);
       results = [
@@ -271,7 +351,7 @@ export class TagManagerData {
       const variables = Array.from(this.variables.values());
       const triggers = Array.from(this.triggers.values());
 
-      await this.batchPromise(async (val: any) => {
+      await this.batchPromise(async (val: tagmanager_v2.Schema$Tag) => {
         console.log(
           `==> Deleting tag - Tag ID: ${val.tagId}, Tag Name: ${val.name}`.grey
         );
@@ -287,7 +367,7 @@ export class TagManagerData {
       // variables depend on cannot be deleted unless the dependent variables
       // are deleted first.
       await this.batchPromise(
-        async (val: any) => {
+        async (val: tagmanager_v2.Schema$Variable) => {
           console.log(
             `==> Deleting variable - Variable ID (jsm): ${val.variableId}, Variable Name: ${val.name}`
               .grey
@@ -304,7 +384,7 @@ export class TagManagerData {
       );
 
       await this.batchPromise(
-        async (val: any) => {
+        async (val: tagmanager_v2.Schema$Variable) => {
           console.log(
             `==> Deleting variable - Variable ID: ${val.variableId}, Variable Name: ${val.name}`
               .grey
@@ -320,7 +400,7 @@ export class TagManagerData {
         variables.filter(variable => variable.type !== 'jsm')
       );
 
-      await this.batchPromise(async (val: any) => {
+      await this.batchPromise(async (val: tagmanager_v2.Schema$Trigger) => {
         console.log(
           `==> Deleting trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
             .grey
