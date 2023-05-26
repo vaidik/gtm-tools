@@ -314,14 +314,14 @@ export class TagManagerData {
     return Promise.resolve(accountDataResponse);
   }
 
-  private async batchPromise(
-    task: any,
-    items: any[],
+  private async batchPromise<F extends (arg: T) => unknown, T>(
+    task: F,
+    items: T[],
     batchSize: number = this.config.tagManagerAPI.defaultRateLimitBatchSize,
     batchDelay: number = this.config.tagManagerAPI.defaultRateLimitBatchDelay
-  ): Promise<any[]> {
+  ): Promise<unknown[]> {
     let position = 0;
-    let results: any[] = [];
+    let results: unknown[] = [];
     while (position < items.length) {
       const itemsForBatch = items.slice(position, position + batchSize);
       results = [
