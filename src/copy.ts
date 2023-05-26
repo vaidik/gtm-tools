@@ -7,16 +7,7 @@ import {TagManagerData} from './core.js';
 import {Config} from './config.js';
 import Table from 'cli-table';
 
-colors.enable();
-
-// TODO: this is not a good function at all, just another indirection
-async function copy(
-  sourceAccount: TagManagerData,
-  targetAccount: TagManagerData
-) {
-  console.log('Copied entities successfully'.green); // TODO: fix this log
-  return await targetAccount.copyDataFromAccount(sourceAccount);
-}
+colors.enable(); // TODO: may be this can move to just index.ts?
 
 const copy_cmd = new Command('copy');
 const copyCmdSourceAccountOptions = {
@@ -156,18 +147,35 @@ copy_cmd.action(async () => {
           );
           await targetAccount.getData();
           await targetAccount.reset();
-          const responses = await copy(sourceAccount, targetAccount);
+          const responses = await targetAccount.copyDataFromAccount(
+            sourceAccount
+          );
+
           const variablesTable = new Table({
-            head: ['Variable ID', 'Name', 'Type', 'Copy Status', 'Reason'],
+            head: [
+              'Variable ID',
+              'Name',
+              'Type',
+              '👉 Copy Status',
+              '👉 Reason',
+              '✨ New Variable ID',
+            ],
           });
-          sourceAccount.variables.forEach((val, variableId) => {
+          responses.variables.forEach(val => {
+            const sourceVariable = sourceAccount.variables.get(
+              val.sourceVariableId
+            );
             variablesTable.push([
-              variableId as string,
-              val.name as string,
-              val.type as string,
-              responses.get(variableId)?.error === undefined
+              val.sourceVariableId as string,
+              sourceVariable?.name as string,
+              sourceVariable?.type as string,
+              val.response.error === undefined
                 ? 'Copy Successful'
                 : 'Copy Failed',
+              val.response.error !== undefined
+                ? val.response.error?.message
+                : '',
+              val.targetVariableId === undefined ? '' : val.targetVariableId,
             ]);
           });
           console.log(
@@ -178,19 +186,30 @@ copy_cmd.action(async () => {
           console.log('\n');
 
           const triggersTable = new Table({
-            head: ['Trigger ID', 'Name', 'Type', 'Copy Status', 'Reason'],
+            head: [
+              'Trigger ID',
+              'Name',
+              'Type',
+              '👉 Copy Status',
+              '👉 Reason',
+              '✨New Trigger ID',
+            ],
           });
-          sourceAccount.triggers.forEach((val, triggerId) => {
+          responses.triggers.forEach(val => {
+            const sourceTrigger = sourceAccount.triggers.get(
+              val.sourceTriggerId
+            );
             triggersTable.push([
-              triggerId as string,
-              val.name as string,
-              val.type as string,
-              responses.get(triggerId)?.error === undefined
+              val.sourceTriggerId as string,
+              sourceTrigger?.name as string,
+              sourceTrigger?.type as string,
+              val.response.error === undefined
                 ? 'Copy Successful'
                 : 'Copy Failed',
-              responses.get(triggerId)?.error !== undefined
-                ? (responses.get(triggerId)?.error?.message as string)
+              val.response.error !== undefined
+                ? val.response.error?.message
                 : '',
+              val.targetTriggerId === undefined ? '' : val.targetTriggerId,
             ]);
           });
           console.log(
@@ -198,6 +217,54 @@ copy_cmd.action(async () => {
             `(${sourceAccount.triggers.size} triggers)`
           );
           console.log(triggersTable.toString());
+          console.log('\n');
+
+          const tagsTable = new Table({
+            head: [
+              'Tag ID',
+              'Name',
+              'Type',
+              'Firing Triggers (Trigger ID)',
+              '👉 Copy Status',
+              '👉 Reason',
+              '✨ New Tag ID',
+              '✨ New Firing Triggers (New Trigger ID)',
+            ],
+          });
+          responses.tags.forEach(val => {
+            const sourceTag = sourceAccount.tags.get(val.sourceTagId);
+            tagsTable.push([
+              val.sourceTagId as string,
+              sourceTag?.name as string,
+              sourceTag?.type as string,
+              (sourceTag?.firingTriggerId
+                ?.map(
+                  x =>
+                    `${sourceAccount.triggers?.get(x)?.name} (${
+                      sourceAccount.triggers?.get(x)?.triggerId
+                    })`
+                )
+                .join(', ') ?? '') as string,
+              val.response.error === undefined
+                ? 'Copy Successful'
+                : 'Copy Failed',
+              val.response.error !== undefined
+                ? val.response.error?.message
+                : '',
+              val.targetTagId === undefined ? '' : val.targetTagId,
+              (targetAccount.tags
+                .get(val.targetTagId)
+                ?.firingTriggerId?.map(
+                  x =>
+                    `${targetAccount.triggers?.get(x)?.name} (${
+                      targetAccount.triggers?.get(x)?.triggerId
+                    })`
+                )
+                .join(', ') ?? '') as string,
+            ]);
+          });
+          console.log('==> Tags'.blue, `(${sourceAccount.tags.size} tags)`);
+          console.log(tagsTable.toString());
           console.log('\n');
         }
       })
