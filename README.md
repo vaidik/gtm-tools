@@ -45,14 +45,29 @@ The `copy` command comes with options:
 #### `diff`
 
 The `diff` command generates a diff of settings between two GTM accounts. This
-is helpful when adding or updating settings in a non-production GTM account. The
-`diff` command can be handy in understanding what changed between the production
-and non-production accounts, and accordingly promote changes carefully to the
-production account.
+is helpful when testing new settings in a non-production GTM account and
+comparing them before applying the changes in your production account using the
+`copy` command.
 
 ```
-gtm-tools diff -sa <SOURCE_ACCOUNT_ID> -sc <SOURCE_CONTAINER_ID> -ta <TARGET_ACCOUNT_ID> -tc <TARGET_CONTAINER_ID>
+gtm-tools diff -saa <SOURCE_ACCOUNT_ALIAS> -ta <TARGET_ACCOUNT_ALIAS>
 ```
+
+**Examples:**
+
+* Review changes in non-production account (Account Alias: `DEV_ACCOUNT`) before
+  promoting changes to the production account (Account Alias: `PROD_ACCOUNT`):
+
+  ```
+  gtm-tools diff -saa DEV_ACCOUNT -taa PROD_ACCOUNT
+  ```
+
+  When everything looks good, use the `copy` command to apply the changes from
+  the non-production account to the production account:
+
+  ```
+  gtm-tools copy -saa DEV_ACCOUNT -taa PROD_ACCOUNT
+  ```
 
 #### `reset`
 
