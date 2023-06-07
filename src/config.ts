@@ -8,9 +8,14 @@ import {
   IsOptional,
   IsNumber,
   IsPositive,
+  MinLength,
 } from 'class-validator';
 
-class AccountConfig {
+abstract class AbstractConfig {
+  fixTypes() {}
+}
+
+class AccountConfig extends AbstractConfig {
   @IsString()
   alias: string;
 
@@ -27,20 +32,35 @@ class AccountConfig {
   @IsOptional()
   isResettable?: boolean;
 
+  @IsOptional()
+  @MinLength(1, {each: true})
+  variableOverrides: Map<string, string> | undefined;
+
   constructor(
     alias: string,
     accountId: string,
     containerId: string,
     workspaceId: string
   ) {
+    super();
     this.alias = alias;
     this.accountId = accountId;
     this.containerId = containerId;
     this.workspaceId = workspaceId;
   }
+
+  fixTypes(): void {
+    if (this.variableOverrides) {
+      const obj = new Map<string, string>();
+      for (const [key, val] of Object.entries(this.variableOverrides ?? {})) {
+        obj.set(key, val);
+      }
+      this.variableOverrides = obj;
+    }
+  }
 }
 
-class TagManagerAPIConfig {
+class TagManagerAPIConfig extends AbstractConfig {
   @IsNumber()
   @IsPositive()
   defaultRateLimitBatchSize: number;
@@ -53,12 +73,13 @@ class TagManagerAPIConfig {
     defaultRateLimitBatchSize = 5, // 15 requests per minute
     defaultRateLimitBatchDelay = 15000 // 15 seconds
   ) {
+    super();
     this.defaultRateLimitBatchSize = defaultRateLimitBatchSize;
     this.defaultRateLimitBatchDelay = defaultRateLimitBatchDelay;
   }
 }
 
-export class Config {
+export class Config extends AbstractConfig {
   private static instance: Config;
 
   @ValidateNested()
@@ -70,6 +91,7 @@ export class Config {
   accounts?: AccountConfig[];
 
   constructor(tagManagerAPI?: TagManagerAPIConfig, accounts?: AccountConfig[]) {
+    super();
     if (tagManagerAPI === undefined) {
       this.tagManagerAPI = new TagManagerAPIConfig();
     } else {
@@ -84,13 +106,19 @@ export class Config {
     Config.instance = this;
   }
 
-  getAccount(alias: string): AccountConfig | undefined {
+  fixTypes() {
+    this.accounts?.forEach((account: AccountConfig) => {
+      account?.fixTypes();
+    });
+  }
+
+  getAccount(aliasOrId: string): AccountConfig | undefined {
     const matchedAccounts = this.accounts?.filter(
-      account => account.alias === alias
+      account => account.alias === aliasOrId || account.accountId === aliasOrId
     );
     if (matchedAccounts?.length === 0) {
       throw new Error(
-        `Could not find an account by the alias ${alias} in the config.`
+        `Could not find an account by alias or ID ${aliasOrId} in the config.`
       );
     }
     return matchedAccounts ? matchedAccounts[0] : undefined;

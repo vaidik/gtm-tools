@@ -157,7 +157,6 @@ copy_cmd.action(async () => {
               'Name',
               'Type',
               '👉 Copy Status',
-              '👉 Reason',
               '✨ New Variable ID',
             ],
           });
@@ -170,11 +169,8 @@ copy_cmd.action(async () => {
               sourceVariable?.name as string,
               sourceVariable?.type as string,
               val.response.error === undefined
-                ? 'Copy Successful'
-                : 'Copy Failed',
-              val.response.error !== undefined
-                ? val.response.error?.message
-                : '',
+                ? '✅ Copy Successful'
+                : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
               val.targetVariableId === undefined ? '' : val.targetVariableId,
             ]);
           });
@@ -191,7 +187,6 @@ copy_cmd.action(async () => {
               'Name',
               'Type',
               '👉 Copy Status',
-              '👉 Reason',
               '✨New Trigger ID',
             ],
           });
@@ -204,11 +199,8 @@ copy_cmd.action(async () => {
               sourceTrigger?.name as string,
               sourceTrigger?.type as string,
               val.response.error === undefined
-                ? 'Copy Successful'
-                : 'Copy Failed',
-              val.response.error !== undefined
-                ? val.response.error?.message
-                : '',
+                ? '✅ Copy Successful'
+                : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
               val.targetTriggerId === undefined ? '' : val.targetTriggerId,
             ]);
           });
@@ -226,7 +218,6 @@ copy_cmd.action(async () => {
               'Type',
               'Firing Triggers (Trigger ID)',
               '👉 Copy Status',
-              '👉 Reason',
               '✨ New Tag ID',
               '✨ New Firing Triggers (New Trigger ID)',
             ],
@@ -246,11 +237,8 @@ copy_cmd.action(async () => {
                 )
                 .join(', ') ?? '') as string,
               val.response.error === undefined
-                ? 'Copy Successful'
-                : 'Copy Failed',
-              val.response.error !== undefined
-                ? val.response.error?.message
-                : '',
+                ? '✅ Copy Successful'
+                : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
               val.targetTagId === undefined ? '' : val.targetTagId,
               (targetAccount.tags
                 .get(val.targetTagId)
