@@ -35,7 +35,7 @@ async function list(account: TagManagerData) {
       trigger.name as string,
       trigger.triggerId as string,
       trigger.type as string,
-      yaml.stringify(trigger?.customEventFilter) ?? ''
+      yaml.stringify(trigger?.customEventFilter) ?? '',
     ]);
   });
   console.log('==> Triggers'.blue, `(${account.triggers.size} triggers)`);
@@ -44,7 +44,13 @@ async function list(account: TagManagerData) {
 
   // Tags
   const tagsTable = new Table({
-    head: ['Name', 'Tag ID', 'Type', 'Firing Triggers (Trigger ID)', 'Parameters'],
+    head: [
+      'Name',
+      'Tag ID',
+      'Type',
+      'Firing Triggers (Trigger ID)',
+      'Parameters',
+    ],
   });
   account.tags?.forEach(tag => {
     tagsTable.push([
