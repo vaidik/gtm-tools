@@ -1,6 +1,7 @@
 import {Command, Option} from 'commander';
 import Table from 'cli-table';
 import colors from 'colors';
+import yaml from 'yaml';
 import {TagManagerData, validateSingleAccountOpts} from './core.js';
 import {Config} from './config.js';
 
@@ -11,13 +12,14 @@ async function list(account: TagManagerData) {
 
   // Variables
   const variablesTable = new Table({
-    head: ['Variable ID', 'Name', 'Type'],
+    head: ['Name', 'Variable ID', 'Type', 'Parameters'],
   });
-  account.variables.forEach(val => {
+  account.variables.forEach(variable => {
     variablesTable.push([
-      val.variableId as string,
-      val.name as string,
-      val.type as string,
+      variable.name as string,
+      variable.variableId as string,
+      variable.type as string,
+      yaml.stringify(variable?.parameter) ?? '',
     ]);
   });
   console.log('==> Variables'.blue, `(${account.variables.size} variables)`);
@@ -26,13 +28,14 @@ async function list(account: TagManagerData) {
 
   // Triggers
   const triggersTable = new Table({
-    head: ['Trigger ID', 'Name', 'Type'],
+    head: ['Name', 'Trigger ID', 'Type', 'Custom Event Filter'],
   });
   account.triggers?.forEach(trigger => {
     triggersTable.push([
-      trigger.triggerId as string,
       trigger.name as string,
+      trigger.triggerId as string,
       trigger.type as string,
+      yaml.stringify(trigger?.customEventFilter) ?? ''
     ]);
   });
   console.log('==> Triggers'.blue, `(${account.triggers.size} triggers)`);
@@ -41,12 +44,12 @@ async function list(account: TagManagerData) {
 
   // Tags
   const tagsTable = new Table({
-    head: ['Tag ID', 'Name', 'Type', 'Firing Triggers (Trigger ID)'],
+    head: ['Name', 'Tag ID', 'Type', 'Firing Triggers (Trigger ID)', 'Parameters'],
   });
   account.tags?.forEach(tag => {
     tagsTable.push([
-      tag.tagId as string,
       tag.name as string,
+      tag.tagId as string,
       tag.type as string,
       (tag.firingTriggerId
         ?.map(
@@ -56,6 +59,7 @@ async function list(account: TagManagerData) {
             })`
         )
         .join(', ') ?? '') as string,
+      yaml.stringify(tag?.parameter) ?? '',
     ]);
   });
   console.log('==> Tags'.blue, `(${account.tags.size} tags)`);
