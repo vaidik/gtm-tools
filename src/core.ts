@@ -126,6 +126,10 @@ export class TagManagerData {
     });
   }
 
+  isEmpty(): boolean {
+    return !(this.variables.size || this.triggers.size || this.tags.size);
+  }
+
   async copyVariable(
     val: tagmanager_v2.Schema$Variable
   ): Promise<CopyResponse<tagmanager_v2.Schema$Variable>> {

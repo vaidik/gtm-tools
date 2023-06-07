@@ -163,7 +163,23 @@ diffCmd.action(async () => {
   await targetAccount.init();
   await Promise.all([sourceAccount.getData(), targetAccount.getData()]);
 
-  outputEntityDiff(
+  await diff(
+    sourceAccountAlias,
+    targetAccountAlias,
+    sourceAccount,
+    targetAccount,
+    showUnchangedChanges
+  );
+});
+
+export async function diff(
+  sourceAccountAlias: string,
+  targetAccountAlias: string,
+  sourceAccount: TagManagerData,
+  targetAccount: TagManagerData,
+  showUnchangedChanges = false
+): Promise<boolean> {
+  const hasVariableChanges = outputEntityDiff(
     sourceAccountAlias,
     targetAccountAlias,
     'Variable',
@@ -202,7 +218,7 @@ diffCmd.action(async () => {
     showUnchangedChanges
   );
 
-  outputEntityDiff(
+  const hasTriggerChanges = outputEntityDiff(
     sourceAccountAlias,
     targetAccountAlias,
     'Trigger',
@@ -241,7 +257,7 @@ diffCmd.action(async () => {
     showUnchangedChanges
   );
 
-  outputEntityDiff(
+  const hasTagChanges = outputEntityDiff(
     sourceAccountAlias,
     targetAccountAlias,
     'Tag',
@@ -300,7 +316,11 @@ diffCmd.action(async () => {
     },
     showUnchangedChanges
   );
-});
+
+  return Promise.resolve(
+    hasVariableChanges || hasTriggerChanges || hasTagChanges
+  );
+}
 
 function outputEntityDiff<
   T extends {name?: string | null | undefined; type?: string | null | undefined}
@@ -316,7 +336,7 @@ function outputEntityDiff<
     [key: string]: (sourceEntity?: T, targetEntity?: T) => Change[];
   },
   showUnchangedChanges = false
-) {
+): boolean {
   const entitiesByName = new Map<
     string,
     {source?: T; target?: T; changeType?: RowChangeTypeEnum}
@@ -420,32 +440,41 @@ function outputEntityDiff<
     }
   });
 
+  const additions = Array.from(entitiesByName.values()).filter(
+    row => row.changeType === RowChangeTypeEnum.Added
+  ).length;
+  const deletions = Array.from(entitiesByName.values()).filter(
+    row => row.changeType === RowChangeTypeEnum.Removed
+  ).length;
+  const modifications = Array.from(entitiesByName.values()).filter(
+    row => row.changeType === RowChangeTypeEnum.Modified
+  ).length;
+  const unchanged = Array.from(entitiesByName.values()).filter(
+    row => row.changeType === RowChangeTypeEnum.Unchanged
+  ).length;
+  const hasChanges = !!(additions || modifications || deletions);
+
   console.log(
     `==> ${entityName}s`.blue,
     '[',
-    `${
-      Array.from(entitiesByName.values()).filter(
-        row => row.changeType === RowChangeTypeEnum.Added
-      ).length
-    } additions, `.green,
-    `${
-      Array.from(entitiesByName.values()).filter(
-        row => row.changeType === RowChangeTypeEnum.Removed
-      ).length
-    } deletions, `.red,
-    `${
-      Array.from(entitiesByName.values()).filter(
-        row => row.changeType === RowChangeTypeEnum.Modified
-      ).length
-    } modifications, `.yellow,
-    `${
-      Array.from(entitiesByName.values()).filter(
-        row => row.changeType === RowChangeTypeEnum.Unchanged
-      ).length
-    } unchanged${!showUnchangedChanges ? ' (hidden)' : ''}`.grey,
+    `${additions} additions, `.green,
+    `${deletions} deletions, `.red,
+    `${modifications} modifications, `.yellow,
+    `${unchanged} unchanged${!showUnchangedChanges ? ' (hidden)' : ''}`.grey,
     ']'
   );
-  console.log(outputTable.toString());
+  if (hasChanges || (showUnchangedChanges && unchanged)) {
+    console.log(outputTable.toString());
+  }
+  if (!hasChanges) {
+    console.log(
+      `No changes in ${entityName.toLowerCase()}s between the source and target accounts.`
+        .grey
+    );
+  }
+  console.log('\n');
+
+  return hasChanges;
 }
 
 export {diffCmd};
