@@ -1,7 +1,7 @@
 import {Command, Option} from 'commander';
 import colors from 'colors';
 import inquirer from 'inquirer';
-import {list} from './list.js';
+import {diff} from './diff.js';
 import {validateSingleAccountOpts} from './core.js';
 import {TagManagerData} from './core.js';
 import {Config} from './config.js';
@@ -128,7 +128,7 @@ copy_cmd.action(async () => {
   await targetAccount.init();
 
   if (isReset) {
-    await list(sourceAccount);
+    await diff(sourceAccountAlias, targetAccountAlias, sourceAccount, targetAccount);
     inquirer
       .prompt([
         {

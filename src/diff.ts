@@ -163,6 +163,16 @@ diffCmd.action(async () => {
   await targetAccount.init();
   await Promise.all([sourceAccount.getData(), targetAccount.getData()]);
 
+  await diff(sourceAccountAlias, targetAccountAlias, sourceAccount, targetAccount, showUnchangedChanges);
+});
+
+export function diff(
+  sourceAccountAlias: string,
+  targetAccountAlias: string,
+  sourceAccount: TagManagerData,
+  targetAccount: TagManagerData,
+  showUnchangedChanges: boolean = false
+) {
   outputEntityDiff(
     sourceAccountAlias,
     targetAccountAlias,
@@ -300,7 +310,7 @@ diffCmd.action(async () => {
     },
     showUnchangedChanges
   );
-});
+}
 
 function outputEntityDiff<
   T extends {name?: string | null | undefined; type?: string | null | undefined}
@@ -315,7 +325,7 @@ function outputEntityDiff<
   additionalColumns: {
     [key: string]: (sourceEntity?: T, targetEntity?: T) => Change[];
   },
-  showUnchangedChanges = false
+  showUnchangedChanges: boolean = false
 ) {
   const entitiesByName = new Map<
     string,
