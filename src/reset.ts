@@ -64,6 +64,10 @@ const resetCmdOptions = {
   ],
 };
 reset_cmd.addOption(resetCmdOptions.primaryOption);
+reset_cmd.option(
+  '-y, --yes',
+  'Answer yes (y) for all prompts (useful for automation)'
+);
 resetCmdOptions.conflictingOptions.forEach(op => reset_cmd.addOption(op));
 
 reset_cmd.action(async () => {
@@ -77,6 +81,7 @@ reset_cmd.action(async () => {
   let accountId: string = reset_cmd.opts().account;
   let containerId: string = reset_cmd.opts().container;
   let workspaceId: string = reset_cmd.opts().workspace;
+  const yes: boolean = reset_cmd.opts().yes;
   let isResettable = true;
 
   if (accountAlias !== undefined) {
@@ -112,25 +117,21 @@ reset_cmd.action(async () => {
     return;
   }
 
-  inquirer
-    .prompt([
-      {
-        type: 'confirm',
-        name: 'continueReset',
-        message: 'Do you want to continue to reset the this GTM account?',
-        default: false,
-      },
-    ])
-    .then(async answers => {
-      if (answers.continueReset) {
-        console.log('Resetting GTM account...'.gray);
-        await account.reset();
-        console.log('Resetting GTM account complete'.green);
-      }
-    })
-    .catch(error => {
-      console.log(error);
-    });
+  const answers = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'continueReset',
+      message: 'Do you want to continue to reset the this GTM account?',
+      default: false,
+      when: !yes,
+    },
+  ]);
+
+  if (yes || answers.continueReset) {
+    console.log('Resetting GTM account...'.gray);
+    await account.reset();
+    console.log('Resetting GTM account complete'.green);
+  }
 });
 
 export {reset_cmd, reset};
