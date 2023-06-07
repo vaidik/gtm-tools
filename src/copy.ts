@@ -63,6 +63,10 @@ copy_cmd.option(
   '-r, --reset',
   'Reset the target GTM account and copy all entities from the source account'
 );
+copy_cmd.option(
+  '-y, --yes',
+  'Answer yes (y) for all prompts (useful for automation)'
+);
 
 copy_cmd.action(async () => {
   try {
@@ -96,6 +100,7 @@ copy_cmd.action(async () => {
   let targetContainerId: string = copy_cmd.opts().targetContainer;
   let targetWorkspaceId: string = copy_cmd.opts().targetWorkspace;
   const isReset: boolean = copy_cmd.opts().reset;
+  const yes: boolean = copy_cmd.opts().yes;
 
   if (sourceAccountAlias !== undefined) {
     const config = new Config();
@@ -143,133 +148,125 @@ copy_cmd.action(async () => {
     }
   }
 
-  inquirer
-    .prompt([
-      {
-        type: 'confirm',
-        name: 'continueReset',
-        message:
-          'Do you want to continue to reset the target GTM account and copy all entities from the source GTM account?',
-        default: false,
-      },
-    ])
-    .then(async answers => {
-      if (answers.continueReset) {
-        console.log(
-          'Resetting target GTM account and copying entities from source GTM account...'
-            .gray
-        );
-        await targetAccount.reset();
-        const responses = await targetAccount.copyDataFromAccount(
-          sourceAccount
-        );
+  const answers = await inquirer.prompt([
+    {
+      type: 'confirm',
+      name: 'continueReset',
+      message:
+        'Do you want to continue to reset the target GTM account and copy all entities from the source GTM account?',
+      default: false,
+      when: !yes,
+    },
+  ]);
 
-        const variablesTable = new Table({
-          head: [
-            'Variable ID',
-            'Name',
-            'Type',
-            '👉 Copy Status',
-            '✨ New Variable ID',
-          ],
-        });
-        responses.variables.forEach(val => {
-          const sourceVariable = sourceAccount.variables.get(
-            val.sourceVariableId
-          );
-          variablesTable.push([
-            val.sourceVariableId as string,
-            sourceVariable?.name as string,
-            sourceVariable?.type as string,
-            val.response.error === undefined
-              ? '✅ Copy Successful'
-              : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
-            val.targetVariableId === undefined ? '' : val.targetVariableId,
-          ]);
-        });
-        console.log(
-          '==> Variables'.blue,
-          `(${sourceAccount.variables.size} variables)`
-        );
-        console.log(variablesTable.toString());
-        console.log('\n');
+  if (yes || answers.continueReset) {
+    console.log(
+      'Resetting target GTM account and copying entities from source GTM account...'
+        .gray
+    );
+    await targetAccount.reset();
+    const responses = await targetAccount.copyDataFromAccount(sourceAccount);
 
-        const triggersTable = new Table({
-          head: [
-            'Trigger ID',
-            'Name',
-            'Type',
-            '👉 Copy Status',
-            '✨New Trigger ID',
-          ],
-        });
-        responses.triggers.forEach(val => {
-          const sourceTrigger = sourceAccount.triggers.get(val.sourceTriggerId);
-          triggersTable.push([
-            val.sourceTriggerId as string,
-            sourceTrigger?.name as string,
-            sourceTrigger?.type as string,
-            val.response.error === undefined
-              ? '✅ Copy Successful'
-              : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
-            val.targetTriggerId === undefined ? '' : val.targetTriggerId,
-          ]);
-        });
-        console.log(
-          '==> Triggers'.blue,
-          `(${sourceAccount.triggers.size} triggers)`
-        );
-        console.log(triggersTable.toString());
-        console.log('\n');
-
-        const tagsTable = new Table({
-          head: [
-            'Tag ID',
-            'Name',
-            'Type',
-            'Firing Triggers (Trigger ID)',
-            '👉 Copy Status',
-            '✨ New Tag ID',
-            '✨ New Firing Triggers (New Trigger ID)',
-          ],
-        });
-        responses.tags.forEach(val => {
-          const sourceTag = sourceAccount.tags.get(val.sourceTagId);
-          tagsTable.push([
-            val.sourceTagId as string,
-            sourceTag?.name as string,
-            sourceTag?.type as string,
-            (sourceTag?.firingTriggerId
-              ?.map(
-                x =>
-                  `${sourceAccount.triggers?.get(x)?.name} (${
-                    sourceAccount.triggers?.get(x)?.triggerId
-                  })`
-              )
-              .join(', ') ?? '') as string,
-            val.response.error === undefined
-              ? '✅ Copy Successful'
-              : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
-            val.targetTagId === undefined ? '' : val.targetTagId,
-            (targetAccount.tags
-              .get(val.targetTagId)
-              ?.firingTriggerId?.map(
-                x =>
-                  `${targetAccount.triggers?.get(x)?.name} (${
-                    targetAccount.triggers?.get(x)?.triggerId
-                  })`
-              )
-              .join(', ') ?? '') as string,
-          ]);
-        });
-        console.log('==> Tags'.blue, `(${sourceAccount.tags.size} tags)`);
-        console.log(tagsTable.toString());
-        console.log('\n');
-      }
-    })
-    .catch(error => {
-      console.log(error);
+    const variablesTable = new Table({
+      head: [
+        'Variable ID',
+        'Name',
+        'Type',
+        '👉 Copy Status',
+        '✨ New Variable ID',
+      ],
     });
+    responses.variables.forEach(val => {
+      const sourceVariable = sourceAccount.variables.get(val.sourceVariableId);
+      variablesTable.push([
+        val.sourceVariableId as string,
+        sourceVariable?.name as string,
+        sourceVariable?.type as string,
+        val.response.error === undefined
+          ? '✅ Copy Successful'
+          : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
+        val.targetVariableId === undefined ? '' : val.targetVariableId,
+      ]);
+    });
+    console.log(
+      '==> Variables'.blue,
+      `(${sourceAccount.variables.size} variables)`
+    );
+    console.log(variablesTable.toString());
+    console.log('\n');
+
+    const triggersTable = new Table({
+      head: [
+        'Trigger ID',
+        'Name',
+        'Type',
+        '👉 Copy Status',
+        '✨New Trigger ID',
+      ],
+    });
+    responses.triggers.forEach(val => {
+      const sourceTrigger = sourceAccount.triggers.get(val.sourceTriggerId);
+      triggersTable.push([
+        val.sourceTriggerId as string,
+        sourceTrigger?.name as string,
+        sourceTrigger?.type as string,
+        val.response.error === undefined
+          ? '✅ Copy Successful'
+          : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
+        val.targetTriggerId === undefined ? '' : val.targetTriggerId,
+      ]);
+    });
+    console.log(
+      '==> Triggers'.blue,
+      `(${sourceAccount.triggers.size} triggers)`
+    );
+    console.log(triggersTable.toString());
+    console.log('\n');
+
+    const tagsTable = new Table({
+      head: [
+        'Tag ID',
+        'Name',
+        'Type',
+        'Firing Triggers (Trigger ID)',
+        '👉 Copy Status',
+        '✨ New Tag ID',
+        '✨ New Firing Triggers (New Trigger ID)',
+      ],
+    });
+    responses.tags.forEach(val => {
+      const sourceTag = sourceAccount.tags.get(val.sourceTagId);
+      tagsTable.push([
+        val.sourceTagId as string,
+        sourceTag?.name as string,
+        sourceTag?.type as string,
+        (sourceTag?.firingTriggerId
+          ?.map(
+            x =>
+              `${sourceAccount.triggers?.get(x)?.name} (${
+                sourceAccount.triggers?.get(x)?.triggerId
+              })`
+          )
+          .join(', ') ?? '') as string,
+        val.response.error === undefined
+          ? '✅ Copy Successful'
+          : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
+        val.targetTagId === undefined ? '' : val.targetTagId,
+        (targetAccount.tags
+          .get(val.targetTagId)
+          ?.firingTriggerId?.map(
+            x =>
+              `${targetAccount.triggers?.get(x)?.name} (${
+                targetAccount.triggers?.get(x)?.triggerId
+              })`
+          )
+          .join(', ') ?? '') as string,
+      ]);
+    });
+    console.log('==> Tags'.blue, `(${sourceAccount.tags.size} tags)`);
+    console.log(tagsTable.toString());
+    console.log('\n');
+  }
 });
 
 export {copy_cmd};
