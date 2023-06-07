@@ -126,9 +126,22 @@ copy_cmd.action(async () => {
     true
   );
   await targetAccount.init();
+  await Promise.all([sourceAccount.getData(), targetAccount.getData()]);
 
   if (isReset) {
-    await diff(sourceAccountAlias, targetAccountAlias, sourceAccount, targetAccount);
+    const hasChanges = await diff(
+      sourceAccountAlias,
+      targetAccountAlias,
+      sourceAccount,
+      targetAccount
+    );
+    if (!hasChanges) {
+      console.log(
+        'There are no changes between the source and target accounts to copy. Exiting.'
+      );
+      return;
+    }
+
     inquirer
       .prompt([
         {
@@ -145,7 +158,6 @@ copy_cmd.action(async () => {
             'Resetting target GTM account and copying entities from source GTM account...'
               .gray
           );
-          await targetAccount.getData();
           await targetAccount.reset();
           const responses = await targetAccount.copyDataFromAccount(
             sourceAccount
