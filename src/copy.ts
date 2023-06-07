@@ -160,10 +160,17 @@ copy_cmd.action(async () => {
   ]);
 
   if (yes || answers.continueReset) {
-    console.log(
-      'Resetting target GTM account and copying entities from source GTM account...'
-        .gray
-    );
+    if (targetAccount.isEmpty()) {
+      console.log(
+        'There is no data in the target GTM account to reset. Continuing to copy entities from source GTM account...'
+          .yellow
+      );
+    } else {
+      console.log(
+        'Resetting target GTM account and copying entities from source GTM account...'
+          .gray
+      );
+    }
     await targetAccount.reset();
     const responses = await targetAccount.copyDataFromAccount(sourceAccount);
 
