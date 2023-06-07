@@ -29,6 +29,7 @@ cli.hook('preAction', async () => {
     })
   );
   const configObj = plainToClass(Config, configRaw as Object);
+  configObj.fixTypes();
 
   await validate(configObj, {forbidUnknownValues: false}).then(errors => {
     if (errors.length > 0) {

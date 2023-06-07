@@ -142,6 +142,17 @@ export class TagManagerData {
     delete requestBody.fingerprint;
     requestBody.formatValue;
 
+    if (requestBody.type === 'c') {
+      const varOverride: string | undefined = this.config
+        .getAccount(this.accountId)
+        ?.variableOverrides?.get(val.name as string);
+      requestBody.parameter?.forEach(val => {
+        if (val.key === 'value') {
+          val.value = varOverride ?? val.value;
+        }
+      });
+    }
+
     try {
       const res =
         this.gtmClient.accounts.containers.workspaces.variables.create({
@@ -362,6 +373,18 @@ export class TagManagerData {
         responses.tags.push(response);
       }, tags);
 
+      await this.batchPromise(async (val: tagmanager_v2.Schema$Trigger) => {
+        console.log(
+          `==> Deleting trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
+            .grey
+        );
+        const response =
+          await this.gtmClient.accounts.containers.workspaces.triggers.delete({
+            path: `${this.parent}/triggers/${val.triggerId}`,
+          });
+        responses.triggers.push(response);
+      }, triggers);
+
       // First delete variables of type `jsm` because they could have
       // other variables that depend on them. So the variables that other
       // variables depend on cannot be deleted unless the dependent variables
@@ -399,18 +422,6 @@ export class TagManagerData {
         },
         variables.filter(variable => variable.type !== 'jsm')
       );
-
-      await this.batchPromise(async (val: tagmanager_v2.Schema$Trigger) => {
-        console.log(
-          `==> Deleting trigger - Trigger ID: ${val.triggerId}, Trigger Name: ${val.name}`
-            .grey
-        );
-        const response =
-          await this.gtmClient.accounts.containers.workspaces.triggers.delete({
-            path: `${this.parent}/triggers/${val.triggerId}`,
-          });
-        responses.triggers.push(response);
-      }, triggers);
     } catch (e) {
       console.log(e);
     }

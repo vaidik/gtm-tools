@@ -239,9 +239,6 @@ copy_cmd.action(async () => {
               val.response.error === undefined
                 ? '✅ Copy Successful'
                 : `❌ Copy Failed \n\n${val.response.error?.message ?? ''}`,
-              val.response.error !== undefined
-                ? val.response.error?.message
-                : '',
               val.targetTagId === undefined ? '' : val.targetTagId,
               (targetAccount.tags
                 .get(val.targetTagId)

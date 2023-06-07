@@ -9,7 +9,12 @@
       "accountId": "123456789",
       "containerId": "123456789",
       "workspaceId": "2",
-      "isResettable": false
+      "isResettable": false,
+      "variableOverrides": {
+        "<Variable 1: Name>": "<Variable 1: Value>",
+        "<Variable 2: Name>": "<Variable 2: Value>",
+        "<Variable 3: Name>": "<Variable 3: Value>"
+      }
     }
   ]
 }
