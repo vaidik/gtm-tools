@@ -1,4 +1,8 @@
 {
+  "tagManagerAPI": {
+    "defaultRateLimitBatchSize": 1,
+    "defaultRateLimitBatchDelay": 5000
+  },
   "accounts": [
     {
       "alias": "account-1",
