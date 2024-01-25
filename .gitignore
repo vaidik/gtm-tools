@@ -4,6 +4,7 @@ credentials.json
 *.code-workspace
 *.vscode
 config.json
+.DS_Store
 
 # Logs
 logs

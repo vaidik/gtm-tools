@@ -70,4 +70,4 @@ be given access to them for API access.
    <img src="img/google-cloud-gtm-access-4.png">
 
 This is it! Your account and service account credentials are now configured to
-be used with `google-tag-manager-tools.`
+be used with `gtm-tools.`
