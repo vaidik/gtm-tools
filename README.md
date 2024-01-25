@@ -36,14 +36,12 @@ Here are some of the use cases:
 npm install gtm-tools
 ```
 
-## Usage
-
-### Configuration
+## Configuration
 
 `gtm-tools` works between two or more GTM accounts. Before proceeding, make sure
 that you have access to your accounts.
 
-#### Prepare the configuration
+### Prepare the configuration
 
 Start with the example config.
 
@@ -89,7 +87,7 @@ like this:
 https://tagmanager.google.com/?authuser=1#/container/accounts/12345678/containers/12345678/workspaces/2
 ```
 
-#### Configure credentials for accessing Google Tag Manager API
+### Configure credentials for accessing Google Tag Manager API
 
 `gtm-tools` needs a Service Account with access to Google Tag Manager API to
 work. Setting up a Service Account with proper accesses is a multi-step complex
@@ -113,6 +111,33 @@ gtm-tools --config config.json list -aa gtm-prod
 
 The command should execute successfully showing the configuration of your
 account.
+
+### Configuration Options
+
+| Configuration Key                          | Type                | Default | Required | Description                                                                                                                                                                                                  |
+|--------------------------------------------|---------------------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `tagManagerAPI.defaultRateLimitBatchSize`  | int                 | 1       |          | Batch size for the count of API requests to be made to Tag Manager API without a delay. After this batch, a delay will be injected before the next batch starts, controlled by `defaultRateLimitBatchDelay`. |
+| `tagManagerAPI.defaultRateLimitBatchDelay` | int                 | 5000    |          | Add delay (in milliseconds) between subsequent batches of requests to Tag Manager API to avoid rate limiting.                                                                                                |
+| `accounts[].alias`                         | string              |         | Yes      | Human-friendly alias to refer to the account while using  `gtm-tools`.                                                                                                                                       |
+| `accounts[].accountId`                     | string              |         | Yes      | Account ID of the GTM account.                                                                                                                                                                               |
+| `accounts[].containerId`                   | string              |         | Yes      | Container ID of the container within the GTM account.                                                                                                                                                        |
+| `accounts[].workspaceId`                   | string              |         | Yes      | Workspace ID of the workspace within the container to use.                                                                                                                                                   |
+| `accounts[].isResettable`                  | boolean             | false   |          | Prevents `gtm-tools` from resetting an account accidentally. When set to  `false`, `gtm-tools reset` command will not execute.                                                                               |
+| `accounts[].variableOverrides{}`           | Map<string, string> | {}      |          | Key-value mapping of a **Variable Name** in GTM container with a value to replace while copying the variable to this account. Example: `{ "Hotjar Account ID": "hotjar-dev-account-id-1234" }`               |
+
+## Usage
+
+`gtm-tools` supports several commands. Get help using `--help` option:
+
+```
+gtm-tools --help
+```
+
+Here is an example usage:
+
+```
+gtm-tools --config config.json list -aa <gtm-account-alias-in-config>
+```
 
 ### Commands
 
@@ -139,6 +164,11 @@ non-production environment.
 The *default* behavior is that it will perform a `diff` between all the
 entities of both the accounts and copy only the changes from the source account
 to the target account.
+
+While copying, `gtm-tools` will look for variables that have been provided an
+override using `variableOverrides` configuration for the target account and set
+the value provided in the configuration. This comes handy to easily change
+things like configurations or credentials for 3rd party services in different environments.
 
 ```
 gtm-tools copy -sa <SOURCE_ACCOUNT_ID> -sc <SOURCE_CONTAINER_ID> -sw <SOURCE_WORKSPACE_ID> -ta <TARGET_ACCOUNT_ID> -tc <TARGET_CONTAINER_ID> -tw <TARGET_WORKSPACE_ID>
