@@ -24,7 +24,7 @@
   "scripts": {
     "lint": "gts lint",
     "clean": "gts clean",
-    "compile": "tsc && node scripts/shebangify.js ./build/index.js && chmod a+x ./build/index.js",
+    "compile": "tsc && node scripts/shebangify.js ./dist/index.js && chmod a+x ./dist/index.js",
     "fix": "gts fix",
     "prepare": "husky install",
     "pretest": "npm run compile",
@@ -42,8 +42,8 @@
     "reflect-metadata": "^0.1.13",
     "yaml": "^2.3.1"
   },
-  "main": "./build/index.js",
+  "main": "./dist/index.js",
   "bin": {
-    "gtm-tools": "./build/index.js"
+    "gtm-tools": "./dist/index.js"
   }
 }

@@ -30,6 +30,12 @@ Here are some of the use cases:
 5. If you mess up your dev GTM account and want to start from scratch, reset it
    quickly and then copy the configuration from production to start over.
 
+## Installation
+
+```
+npm install gtm-tools
+```
+
 ## Usage
 
 ### Configuration
