@@ -89,7 +89,7 @@ https://tagmanager.google.com/?authuser=1#/container/accounts/12345678/container
 `google-tag-manager-tools` needs a Service Account with access to Google Tag
 Manager API to work. Setting up a Service Account with proper accesses is a
 multi-step complex process. Head over the to the [detailed docs
-here](docs/GOOGLE-API-CREDENTIALS-SETUPmd) to setup the Service Account and
+here](docs/GOOGLE-API-CREDENTIALS-SETUP.md) to setup the Service Account and
 generate your credentials.
 
 Now that you have your credentials in a JSON file (let's say
