@@ -1,6 +1,6 @@
 # Google API Credentials Setup Instructions
 
-`google-tag-manager-tools` needs credentials of a Google Cloud [Service
+`gtm-tools` needs credentials of a Google Cloud [Service
 Account](https://cloud.google.com/iam/docs/service-account-overview) with access
 to [Tag Manager
 APIs](https://developers.google.com/tag-platform/tag-manager/api/v2) to work.
@@ -65,8 +65,8 @@ be given access to them for API access.
    <img src="img/google-cloud-gtm-access-3.5.png">
 6. Under **Email addresses**, add the email address for your service account.
    Then select the right permissions. If you want to use all the features of
-   `google-tag-manager-tools`, you need to give this **user all the
-   permissions**. Then invite this user.
+   `gtm-tools`, you need to give this **user all the permissions**. Then invite
+   this user.
    <img src="img/google-cloud-gtm-access-4.png">
 
 This is it! Your account and service account credentials are now configured to

@@ -1,12 +1,12 @@
-# google-tag-manager-tools
+# gtm-tools
 
 CLI tool to simplify working with Google Tag Manager (GTM).
 
 If you work with a GTM account and need its entities into a development account
 for testing GTM settings and find it difficult to keep the two accounts in sync,
-you will find `google-tag-manager-tools` handy.
+you will find `gtm-tools` handy.
 
-With `google-tag-manager-tools`, you can:
+With `gtm-tools`, you can:
 * List entities in a GTM account
 * Copy entities from one GTM account to another
 * Get diff between entities of two GTM accounts
@@ -14,9 +14,8 @@ With `google-tag-manager-tools`, you can:
 
 ## Use Cases
 
-`google-tag-manager-tools` is targeted towards developers using GTM to manager
-3rd party integrations on their web applications. Most of the use-cases are to
-cater to developers' needs.
+`gtm-tools` is targeted towards developers using GTM to manager 3rd party
+integrations on their web applications. Most of the use-cases are to cater to developers' needs.
 
 Here are some of the use cases:
 
@@ -35,8 +34,8 @@ Here are some of the use cases:
 
 ### Configuration
 
-`google-tag-manager-tools` works between two or more GTM accounts. Before
-proceeding, make sure that you have access to your accounts.
+`gtm-tools` works between two or more GTM accounts. Before proceeding, make sure
+that you have access to your accounts.
 
 #### Prepare the configuration
 
@@ -86,22 +85,21 @@ https://tagmanager.google.com/?authuser=1#/container/accounts/12345678/container
 
 #### Configure credentials for accessing Google Tag Manager API
 
-`google-tag-manager-tools` needs a Service Account with access to Google Tag
-Manager API to work. Setting up a Service Account with proper accesses is a
-multi-step complex process. Head over the to the [detailed docs
+`gtm-tools` needs a Service Account with access to Google Tag Manager API to
+work. Setting up a Service Account with proper accesses is a multi-step complex
+process. Head over the to the [detailed docs
 here](docs/GOOGLE-API-CREDENTIALS-SETUP.md) to setup the Service Account and
 generate your credentials.
 
 Now that you have your credentials in a JSON file (let's say
-`credentials.json`), you are ready to tell `google-tag-manager-tools` how to use
-these credentials by setting the environment variable `GOOGLE_APPLICATION_CREDENTIALS`.
+`credentials.json`), you are ready to tell `gtm-tools` how to use these
+credentials by setting the environment variable `GOOGLE_APPLICATION_CREDENTIALS`.
 
 ```
 export GOOGLE_APPLICATION_CREDENTIALS=<path-to-credentials>/credentials.json
 ```
 
-Now test these credentials with `google-tag-manager-tools` by running the
-following command:
+Now test these credentials with `gtm-tools` by running the following command:
 
 ```
 gtm-tools --config config.json list -aa gtm-prod
