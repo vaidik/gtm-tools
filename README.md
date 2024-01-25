@@ -1,6 +1,35 @@
 # google-tag-manager-tools
 
-Tools to simplify working with Google Tag Manager.
+CLI tool to simplify working with Google Tag Manager (GTM).
+
+If you work with a GTM account and need its entities into a development account
+for testing GTM settings and find it difficult to keep the two accounts in sync,
+you will find `google-tag-manager-tools` handy.
+
+With `google-tag-manager-tools`, you can:
+* List entities in a GTM account
+* Copy entities from one GTM account to another
+* Get diff between entities of two GTM accounts
+* Reset a GTM account
+
+## Use Cases
+
+`google-tag-manager-tools` is targeted towards developers using GTM to manager
+3rd party integrations on their web applications. Most of the use-cases are to
+cater to developers' needs.
+
+Here are some of the use cases:
+
+1. Take a quick look into your GTM account without using the web console
+2. Take the backup of your production GTM account into a backup account
+3. Prepare a new GTM account with prod-like configuration for your development
+   environment.
+4. Once you test your changes in your GTM account for the development
+   environment, check the diff (like git) between your dev and production GTM
+   accounts. If the changes look good, copy the changes to the production GTM
+   account.
+5. If you mess up your dev GTM account and want to start from scratch, reset it
+   quickly and then copy the configuration from production to start over.
 
 ## Usage
 
