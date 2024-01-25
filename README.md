@@ -35,6 +35,81 @@ Here are some of the use cases:
 
 ### Configuration
 
+`google-tag-manager-tools` works between two or more GTM accounts. Before
+proceeding, make sure that you have access to your accounts.
+
+#### Prepare the configuration
+
+Start with the example config.
+
+```
+cp example.config.json config.json
+```
+
+Edit `config.json` to add as many GTM accounts you would like to work with.
+Typical users will have two accounts and their `config.json` can look like this:
+
+```json
+{
+  "tagManagerAPI": {
+    "defaultRateLimitBatchSize": 1,
+    "defaultRateLimitBatchDelay": 5000
+  },
+  "accounts": [
+    {
+      "alias": "gtm-prod",
+      "accountId": "12345678",
+      "containerId": "12345678",
+      "workspaceId": "2",
+      "isResettable": false,
+      "variableOverrides": {}
+    },
+    {
+      "alias": "gtm-dev",
+      "accountId": "87654321",
+      "containerId": "87654321",
+      "workspaceId": "2",
+      "isResettable": true,
+      "variableOverrides": {}
+    }
+  ]
+}
+```
+
+To find `accountId`, `containerId` and `workspaceId` for your accounts, log in
+to your GTM account web console. The URL of the web console has all the required
+details. For example, the URL for web console for **gtm-prod** account could
+like this:
+```
+https://tagmanager.google.com/?authuser=1#/container/accounts/12345678/containers/12345678/workspaces/2
+```
+
+#### Configure credentials for accessing Google Tag Manager API
+
+`google-tag-manager-tools` needs a Service Account with access to Google Tag
+Manager API to work. Setting up a Service Account with proper accesses is a
+multi-step complex process. Head over the to the [detailed docs
+here](docs/GOOGLE-API-CREDENTIALS-SETUPmd) to setup the Service Account and
+generate your credentials.
+
+Now that you have your credentials in a JSON file (let's say
+`credentials.json`), you are ready to tell `google-tag-manager-tools` how to use
+these credentials by setting the environment variable `GOOGLE_APPLICATION_CREDENTIALS`.
+
+```
+export GOOGLE_APPLICATION_CREDENTIALS=<path-to-credentials>/credentials.json
+```
+
+Now test these credentials with `google-tag-manager-tools` by running the
+following command:
+
+```
+gtm-tools --config config.json list -aa gtm-prod
+```
+
+The command should execute successfully showing the configuration of your
+account.
+
 ### Commands
 
 #### `list`
