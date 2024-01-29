@@ -9,7 +9,13 @@ import {
   IsNumber,
   IsPositive,
   MinLength,
+  Validate,
+  ValidationError,
+  ValidatorConstraint,
+  ValidatorConstraintInterface,
 } from 'class-validator';
+
+import fs from 'fs';
 
 abstract class AbstractConfig {
   fixTypes() {}
@@ -60,7 +66,22 @@ class AccountConfig extends AbstractConfig {
   }
 }
 
+@ValidatorConstraint({name: 'customText', async: false})
+export class IsValidGoogleAuthKeyFile implements ValidatorConstraintInterface {
+  validate(text: string) {
+    // test if text ends with .json and the file exists
+    return text !== undefined && text.endsWith('.json') && fs.existsSync(text);
+  }
+
+  defaultMessage() {
+    return 'Value for $property ($value) should be a valid file path ".json" extension and must exist at that path.';
+  }
+}
+
 class TagManagerAPIConfig extends AbstractConfig {
+  @Validate(IsValidGoogleAuthKeyFile) // 6 characters for at least ".json" and a name of the file
+  googleAuthKeyFile: string;
+
   @IsNumber()
   @IsPositive()
   defaultRateLimitBatchSize: number;
@@ -70,10 +91,12 @@ class TagManagerAPIConfig extends AbstractConfig {
   defaultRateLimitBatchDelay: number;
 
   constructor(
+    googleAuthKeyFile: string,
     defaultRateLimitBatchSize = 1, // 1 request per batch
     defaultRateLimitBatchDelay = 5000 // 5 seconds
   ) {
     super();
+    this.googleAuthKeyFile = googleAuthKeyFile;
     this.defaultRateLimitBatchSize = defaultRateLimitBatchSize;
     this.defaultRateLimitBatchDelay = defaultRateLimitBatchDelay;
   }
@@ -93,7 +116,7 @@ export class Config extends AbstractConfig {
   constructor(tagManagerAPI?: TagManagerAPIConfig, accounts?: AccountConfig[]) {
     super();
     if (tagManagerAPI === undefined) {
-      this.tagManagerAPI = new TagManagerAPIConfig();
+      this.tagManagerAPI = new TagManagerAPIConfig('');
     } else {
       this.tagManagerAPI = tagManagerAPI;
     }
@@ -122,5 +145,27 @@ export class Config extends AbstractConfig {
       );
     }
     return matchedAccounts ? matchedAccounts[0] : undefined;
+  }
+
+  formatError(error: ValidationError): string {
+    // TODO: this function can be implemented in a better way. This is just a quick hack.
+    const delimiter = '\n - ';
+    let msg = '';
+    msg += error.property + ': ' + '\n';
+
+    if (error.constraints) {
+      msg += (' - ' + Object.values(error.constraints).join(delimiter))
+        .split('\n')
+        .join('\n  ');
+    }
+
+    if (error.children && error?.children.length > 0) {
+      msg += '';
+      error.children?.forEach(child => {
+        msg += '  ' + this.formatError(child).split('\n').join('\n  ') + '\n';
+      });
+    }
+
+    return msg;
   }
 }

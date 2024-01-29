@@ -33,18 +33,18 @@ cli.hook('preAction', async () => {
 
   await validate(configObj, {forbidUnknownValues: false}).then(errors => {
     if (errors.length > 0) {
-      cli.error('Invalid configuration file. Validation failed.'.red);
+      cli.error(
+        (
+          'Invalid configuration file. Validation failed.' +
+          '\n\n' +
+          configObj.formatError(errors[0])
+        ).red
+      );
     }
   });
 });
 
 async function main() {
-  if (!process.env.GOOGLE_APPLICATION_CREDENTIALS) {
-    cli.error(
-      'GOOGLE_APPLICATION_CREDENTIALS environment variable must be set and pointing to a valid Google API credentials.json file.'
-        .red
-    );
-  }
   await cli.parseAsync();
 }
 
