@@ -77,7 +77,7 @@ export class TagManagerData {
 
   async init() {
     const auth = new google.auth.GoogleAuth({
-      // Scopes can be specified either as an array or as a single, space-delimited string.
+      keyFile: this.config.tagManagerAPI.googleAuthKeyFile,
       scopes: [
         'https://www.googleapis.com/auth/tagmanager.edit.containers',
         'https://www.googleapis.com/auth/tagmanager.manage.accounts',
