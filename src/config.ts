@@ -70,8 +70,8 @@ class TagManagerAPIConfig extends AbstractConfig {
   defaultRateLimitBatchDelay: number;
 
   constructor(
-    defaultRateLimitBatchSize = 5, // 15 requests per minute
-    defaultRateLimitBatchDelay = 15000 // 15 seconds
+    defaultRateLimitBatchSize = 1, // 1 request per batch
+    defaultRateLimitBatchDelay = 5000 // 5 seconds
   ) {
     super();
     this.defaultRateLimitBatchSize = defaultRateLimitBatchSize;
