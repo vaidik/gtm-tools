@@ -95,15 +95,12 @@ process. Head over the to the [detailed docs
 here](docs/GOOGLE-API-CREDENTIALS-SETUP.md) to setup the Service Account and
 generate your credentials.
 
-Now that you have your credentials in a JSON file (let's say
-`credentials.json`), you are ready to tell `gtm-tools` how to use these
-credentials by setting the environment variable `GOOGLE_APPLICATION_CREDENTIALS`.
+Now that you have your credentials in a JSON file, which is also known as the
+key file (let's call this file `credentials.json`), you are ready to tell
+`gtm-tools` how to use these credentials. Do so by updating the path to
+`tagManagerAPI.googleAuthKeyFile` config in `config.json` file.
 
-```
-export GOOGLE_APPLICATION_CREDENTIALS=<path-to-credentials>/credentials.json
-```
-
-Now test these credentials with `gtm-tools` by running the following command:
+Now, test these credentials with `gtm-tools` by running the following command:
 
 ```
 gtm-tools --config config.json list -aa gtm-prod
@@ -116,6 +113,7 @@ account.
 
 | Configuration Key                          | Type                | Default | Required | Description                                                                                                                                                                                                  |
 |--------------------------------------------|---------------------|---------|----------|--------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------|
+| `tagManagerAPI.googleAuthKeyFile`          | string              |         | Yes      | Path to the Google Auth API credentials or key file download from Google Cloud Console. Read the [detailed docs here](docs/GOOGLE-API-CREDENTIALS-SETUP.md) to understand how to get your key file. |
 | `tagManagerAPI.defaultRateLimitBatchSize`  | int                 | 1       |          | Batch size for the count of API requests to be made to Tag Manager API without a delay. After this batch, a delay will be injected before the next batch starts, controlled by `defaultRateLimitBatchDelay`. |
 | `tagManagerAPI.defaultRateLimitBatchDelay` | int                 | 5000    |          | Add delay (in milliseconds) between subsequent batches of requests to Tag Manager API to avoid rate limiting.                                                                                                |
 | `accounts[].alias`                         | string              |         | Yes      | Human-friendly alias to refer to the account while using  `gtm-tools`.                                                                                                                                       |
